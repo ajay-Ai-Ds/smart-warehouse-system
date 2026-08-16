@@ -27,7 +27,10 @@ export function WarehouseProvider({ children }) {
   const [products, setProducts] = useState(initialProductsData);
   const [recentlyAllocatedIds, setRecentlyAllocatedIds] = useState(new Set());
   const [isSimulationActive, setIsSimulationActive] = useState(false);
+  const [isEcommerceSyncActive, setIsEcommerceSyncActive] = useState(true); // Live e-commerce sync ON by default
   const generatedCountRef = useRef(0);
+  const lastSyncTimestampRef = useRef(new Date().toISOString());
+  const knownEcomOrderIdsRef = useRef(new Set());
 
   const [decisionLogs, setDecisionLogs] = useState([
     {
@@ -55,6 +58,70 @@ export function WarehouseProvider({ children }) {
       type: 'alert'
     }
   ]);
+
+  // ═══════════════════════════════════════════════════════════
+  // 🔴 LIVE E-COMMERCE SYNC — polls Upstash Redis every 3 seconds
+  // This is the magic that connects Quality Enterprises → Dashboard
+  // ═══════════════════════════════════════════════════════════
+  useEffect(() => {
+    if (!isEcommerceSyncActive) return;
+
+    const syncInterval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/orders?since=${encodeURIComponent(lastSyncTimestampRef.current)}`);
+        if (!res.ok) return;
+
+        const data = await res.json();
+
+        if (data.orders && data.orders.length > 0) {
+          const newOrders = data.orders.filter(
+            (order) => !knownEcomOrderIdsRef.current.has(order.id)
+          );
+
+          if (newOrders.length === 0) return;
+
+          // Mark these order IDs as known so we don't re-add them
+          newOrders.forEach((o) => knownEcomOrderIdsRef.current.add(o.id));
+
+          // Update last sync timestamp
+          lastSyncTimestampRef.current = data.timestamp || new Date().toISOString();
+
+          // Inject new orders into the live orders list
+          setOrders((prevOrders) => [...newOrders, ...prevOrders]);
+
+          // Generate decision logs for each new e-commerce order
+          const timestamp = new Date().toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+          });
+
+          const newLogs = newOrders.map((order) => ({
+            id: `ecom-${order.id}-${Date.now()}`,
+            timestamp,
+            text: `🛒 E-COMMERCE ORDER: #${order.id} (${order.priority}) received from ${order.customerName}. Scored ${order.priorityScore || '—'} and queued for allocation.`,
+            type: order.priority === 'Urgent' ? 'alert' : 'success',
+          }));
+
+          setDecisionLogs((prev) => [...newLogs, ...prev]);
+
+          // Flash highlight the new orders
+          const newIds = new Set(newOrders.map((o) => o.id));
+          setRecentlyAllocatedIds(newIds);
+          setTimeout(() => setRecentlyAllocatedIds(new Set()), 3000);
+        }
+      } catch (err) {
+        // Silently fail — network hiccups are normal
+        console.warn('E-commerce sync poll failed:', err.message);
+      }
+    }, 3000); // Poll every 3 seconds
+
+    return () => clearInterval(syncInterval);
+  }, [isEcommerceSyncActive]);
+
+  const toggleEcommerceSync = () => {
+    setIsEcommerceSyncActive((prev) => !prev);
+  };
 
   // Live Simulation Mode Interval Engine
   useEffect(() => {
@@ -306,7 +373,9 @@ export function WarehouseProvider({ children }) {
         decisionLogs,
         recentlyAllocatedIds,
         isSimulationActive,
+        isEcommerceSyncActive,
         toggleSimulation,
+        toggleEcommerceSync,
         allocateSingleOrder,
         runAutoAllocateAll,
         moveOrderStage,
