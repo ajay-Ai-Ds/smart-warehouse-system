@@ -108,11 +108,11 @@ export default function Home() {
         {/* Subtle Ambient Orbs */}
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none"></div>
 
-        {/* Floating Mute/Unmute Audio Button in Corner */}
+        {/* Floating Mute/Unmute Audio Button in Top Right Corner */}
         <button
           onClick={toggleMute}
           aria-label={isMuted ? "Unmute Video Audio" : "Mute Video Audio"}
-          className="absolute bottom-6 left-6 z-30 px-4 py-2.5 bg-slate-950/85 hover:bg-slate-900 text-white text-xs font-extrabold rounded-2xl border border-slate-700/80 shadow-2xl backdrop-blur-md transition-all flex items-center space-x-2 active:scale-95 cursor-pointer"
+          className="absolute top-6 right-6 z-30 px-4 py-2.5 bg-slate-950/85 hover:bg-slate-900 text-white text-xs font-extrabold rounded-2xl border border-slate-700/80 shadow-2xl backdrop-blur-md transition-all flex items-center space-x-2 active:scale-95 cursor-pointer"
         >
           <span className="text-base">{isMuted ? '🔇' : '🔊'}</span>
           <span>{isMuted ? 'Unmute Audio' : 'Audio On'}</span>
