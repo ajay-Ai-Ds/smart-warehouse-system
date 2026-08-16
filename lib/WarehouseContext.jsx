@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import initialOrdersData from '@/data/orders.json';
 import initialProductsData from '@/data/products.json';
 import { allocateStock, generateDecisionLog } from '@/lib/allocationEngine';
@@ -9,11 +9,26 @@ const WarehouseContext = createContext();
 
 const STAGE_FLOW = ['Created', 'Allocated', 'Picking', 'Packing', 'QC', 'Dispatched'];
 
+const SAMPLE_CUSTOMERS = [
+  'Delhivery Express Logistics',
+  'Flipkart Fulfillment Hub',
+  'Amazon India Direct',
+  'Tata Logistics Network',
+  'Reliance Retail Supply',
+  'Blue Dart Express',
+  'Shadowfax Parcel Post',
+  'Ecom Express Cargo',
+  'Mahindra Logistics Center',
+  'Xpressbees Freight'
+];
+
 export function WarehouseProvider({ children }) {
   const [orders, setOrders] = useState(initialOrdersData);
   const [products, setProducts] = useState(initialProductsData);
   const [recentlyAllocatedIds, setRecentlyAllocatedIds] = useState(new Set());
-  
+  const [isSimulationActive, setIsSimulationActive] = useState(false);
+  const generatedCountRef = useRef(0);
+
   const [decisionLogs, setDecisionLogs] = useState([
     {
       id: 'init-1',
@@ -40,6 +55,74 @@ export function WarehouseProvider({ children }) {
       type: 'alert'
     }
   ]);
+
+  // Live Simulation Mode Interval Engine
+  useEffect(() => {
+    if (!isSimulationActive) return;
+
+    const simulationInterval = setInterval(() => {
+      if (generatedCountRef.current >= 15) {
+        setIsSimulationActive(false);
+        return;
+      }
+
+      generatedCountRef.current += 1;
+      const nextIdNum = 1040 + generatedCountRef.current;
+      const newOrderId = `ORD-${nextIdNum}`;
+      const customer = SAMPLE_CUSTOMERS[Math.floor(Math.random() * SAMPLE_CUSTOMERS.length)];
+      const priority = Math.random() < 0.35 ? 'Urgent' : Math.random() < 0.70 ? 'Standard' : 'Low';
+      
+      const randomProd1 = products[Math.floor(Math.random() * products.length)];
+      const randomProd2 = products[Math.floor(Math.random() * products.length)];
+
+      const deadlineHours = priority === 'Urgent' ? 2 : priority === 'Standard' ? 6 : 24;
+      const deadlineDate = new Date(Date.now() + deadlineHours * 3600 * 1000).toISOString();
+
+      const newOrder = {
+        id: newOrderId,
+        customerName: customer,
+        items: [
+          { productId: randomProd1.id, qty: Math.floor(Math.random() * 5) + 1 },
+          { productId: randomProd2.id, qty: Math.floor(Math.random() * 10) + 1 }
+        ],
+        priority,
+        deadline: deadlineDate,
+        status: 'Created',
+        createdAt: new Date().toISOString()
+      };
+
+      // Add order and trigger auto-allocation
+      setOrders(prevOrders => [newOrder, ...prevOrders]);
+
+      // Execute stock allocation
+      const currentOrders = [newOrder, ...orders];
+      const allocationResults = allocateStock(currentOrders, products);
+
+      if (allocationResults.length > 0) {
+        const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        
+        setDecisionLogs(prev => [
+          {
+            id: `sim-log-${Date.now()}`,
+            timestamp,
+            text: `LIVE SIMULATION: New Order #${newOrderId} (${priority}) received from ${customer} & evaluated by Allocation Engine.`,
+            type: priority === 'Urgent' ? 'alert' : 'info'
+          },
+          ...prev
+        ]);
+      }
+
+      setRecentlyAllocatedIds(new Set([newOrderId]));
+      setTimeout(() => setRecentlyAllocatedIds(new Set()), 2000);
+
+    }, 15000); // 15s interval
+
+    return () => clearInterval(simulationInterval);
+  }, [isSimulationActive, orders, products]);
+
+  const toggleSimulation = () => {
+    setIsSimulationActive(prev => !prev);
+  };
 
   // Allocate a single order manually
   const allocateSingleOrder = (orderId) => {
@@ -88,7 +171,7 @@ export function WarehouseProvider({ children }) {
     const affectedIds = new Set();
 
     const updatedOrders = orders.map(order => {
-      if (order.status !== 'Created') return order;
+      if (order.status !== 'Created' && order.status !== 'Pending') return order;
 
       const itemsResult = orderResultsMap.get(order.id) || [];
       if (itemsResult.length === 0) return order;
@@ -127,7 +210,6 @@ export function WarehouseProvider({ children }) {
 
     const nextStatus = STAGE_FLOW[currentIndex + 1];
 
-    // Check for 10% chance of exception when moving to "Picking"
     let triggerException = false;
     if (nextStatus === 'Picking') {
       triggerException = Math.random() < 0.10;
@@ -195,7 +277,6 @@ export function WarehouseProvider({ children }) {
           };
         }
 
-        // Action: Resolve & advance to Packing
         return {
           ...order,
           status: 'Packing',
@@ -224,6 +305,8 @@ export function WarehouseProvider({ children }) {
         products,
         decisionLogs,
         recentlyAllocatedIds,
+        isSimulationActive,
+        toggleSimulation,
         allocateSingleOrder,
         runAutoAllocateAll,
         moveOrderStage,

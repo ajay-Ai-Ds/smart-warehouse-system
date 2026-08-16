@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { useWarehouse } from '@/lib/WarehouseContext';
+import SmartVsFifoComparison from '@/components/SmartVsFifoComparison';
 import {
   BarChart,
   Bar,
@@ -58,131 +59,156 @@ export default function AnalyticsPage() {
 
   const ordersByStageData = stages.map(stage => ({
     stage,
-    count: orders.filter(o => o.status === stage).length,
-    fill: stageColors[stage]
+    count: orders.filter(o => o.status === stage).length
   }));
 
   // 3. Chart 2 Data — Priority Breakdown
-  const priorityCounts = [
-    { name: 'Urgent', value: orders.filter(o => o.priority === 'Urgent').length, color: '#ef4444' },
-    { name: 'Standard', value: orders.filter(o => o.priority === 'Standard').length, color: '#3b82f6' },
-    { name: 'Low', value: orders.filter(o => o.priority === 'Low').length, color: '#64748b' }
-  ];
+  const priorityColors = {
+    Urgent: '#ef4444',
+    Standard: '#3b82f6',
+    Low: '#64748b'
+  };
+
+  const priorityBreakdownData = [
+    { name: 'Urgent', value: orders.filter(o => o.priority === 'Urgent').length },
+    { name: 'Standard', value: orders.filter(o => o.priority === 'Standard').length },
+    { name: 'Low', value: orders.filter(o => o.priority === 'Low').length }
+  ].filter(d => d.value > 0);
 
   // 4. Chart 3 Data — Stock Levels vs Reorder Point
-  const stockChartData = products.map(product => {
-    const isLow = Number(product.quantityOnHand) <= Number(product.reorderPoint);
+  const stockLevelData = products.map(product => ({
+    name: product.sku,
+    fullName: product.name,
+    quantityOnHand: product.quantityOnHand,
+    reorderPoint: product.reorderPoint,
+    isLow: Number(product.quantityOnHand) <= Number(product.reorderPoint)
+  }));
+
+  // 5. Dynamic Bottleneck Analysis computation
+  const bottleneckInfo = useMemo(() => {
+    const counts = stages.map(stage => ({
+      stage,
+      count: orders.filter(o => o.status === stage).length
+    }));
+
+    // Find active non-dispatched stage with max orders
+    const activeStages = counts.filter(c => c.stage !== 'Dispatched');
+    const sorted = [...activeStages].sort((a, b) => b.count - a.count);
+    const topStage = sorted[0];
+
+    if (!topStage || topStage.count === 0) {
+      return {
+        stageName: 'None',
+        description: 'Operations are running smoothly with no immediate floor bottlenecks detected.'
+      };
+    }
+
+    let recommendation = '';
+    if (topStage.stage === 'Picking') {
+      recommendation = 'High volume of orders queued for floor picking. Recommend re-assigning 2 packers to assist pickers.';
+    } else if (topStage.stage === 'Packing') {
+      recommendation = 'Packing station queue exceeds threshold. Recommend opening secondary packing line B.';
+    } else if (topStage.stage === 'QC') {
+      recommendation = 'Quality Check inspection queue holding shipments. Recommend prioritizing urgent SLA orders first.';
+    } else if (topStage.stage === 'Allocated') {
+      recommendation = 'Orders allocated but waiting to be picked up. Dispatch picking tasks to floor staff immediately.';
+    } else {
+      recommendation = 'Orders queued for allocation. Run Auto-Allocate All to release items.';
+    }
+
     return {
-      sku: product.sku,
-      name: product.name,
-      quantityOnHand: Number(product.quantityOnHand),
-      reorderPoint: Number(product.reorderPoint),
-      isLow,
-      fill: isLow ? '#ef4444' : '#10b981'
+      stageName: topStage.stage,
+      count: topStage.count,
+      description: recommendation
     };
-  });
-
-  // 5. Bottleneck Insight Calculation (Dynamic)
-  const activeStages = ['Created', 'Allocated', 'Picking', 'Packing', 'QC'];
-  const bottleneck = useMemo(() => {
-    let topStage = 'Created';
-    let maxCount = -1;
-
-    activeStages.forEach(stage => {
-      const count = orders.filter(o => o.status === stage).length;
-      if (count > maxCount) {
-        maxCount = count;
-        topStage = stage;
-      }
-    });
-
-    return { stage: topStage, count: maxCount };
   }, [orders]);
-
-  const bottleneckInsightText = bottleneck.count > 0
-    ? `${bottleneck.stage} stage currently has the most orders waiting (${bottleneck.count}) — consider reallocating staff.`
-    : `All fulfillment pipelines are clear and balanced across stages.`;
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-12 -m-6 p-6">
       <div className="max-w-7xl mx-auto space-y-8">
         
-        {/* Header */}
-        <div className="bg-slate-900 rounded-2xl p-6 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 border border-slate-800">
+        {/* Page Header */}
+        <div className="bg-slate-900 rounded-2xl p-6 sm:p-8 text-white shadow-xl shadow-slate-900/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-slate-800">
           <div>
-            <div className="flex items-center space-x-2 mb-1">
-              <span className="h-2.5 w-2.5 rounded-full bg-teal-400"></span>
-              <span className="text-xs uppercase tracking-widest font-bold text-slate-400">Warehouse Telemetry</span>
+            <div className="flex items-center space-x-3 mb-2">
+              <span className="h-3 w-3 rounded-full bg-teal-400 animate-pulse"></span>
+              <span className="text-xs uppercase tracking-widest font-bold text-slate-400">System Telemetry & Insights</span>
             </div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-white">Fulfillment &amp; Stock Analytics</h1>
-            <p className="text-sm text-slate-400 mt-1">Real-time inventory metrics, order velocity, and stage efficiency</p>
+            <h1 className="text-3xl font-extrabold tracking-tight text-white">Analytics & Optimization</h1>
+            <p className="text-sm text-slate-400 mt-1">Real-time performance metrics, stage volumes, and benchmark comparisons</p>
+          </div>
+          <div className="flex items-center space-x-2 bg-slate-950 px-4 py-2 rounded-xl border border-slate-800 text-xs font-mono">
+            <span className="text-teal-400 font-bold">● Live Analytics Active</span>
           </div>
         </div>
 
         {/* 1. Top Row — 3 Summary Stat Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm hover:shadow-md transition">
+          
+          {/* Card 1: Fulfillment Rate Today */}
+          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Fulfillment Rate Today</span>
               <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-lg">
                 📈
               </div>
             </div>
-            <div className="mt-4 flex items-baseline justify-between">
+            <div className="mt-4">
               <p className="text-3xl font-extrabold text-slate-900">{fulfillmentRate}%</p>
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800">
-                {dispatchedCount}/{totalOrdersCount} Dispatched
-              </span>
+              <div className="w-full bg-slate-100 rounded-full h-2 mt-3 overflow-hidden">
+                <div
+                  className="bg-emerald-500 h-2 rounded-full transition-all duration-500"
+                  style={{ width: `${fulfillmentRate}%` }}
+                ></div>
+              </div>
             </div>
-            <p className="text-xs text-slate-500 mt-2">Percentage of total orders completed</p>
+            <p className="text-xs text-slate-500 mt-3">Dispatched orders vs total order volume</p>
           </div>
 
-          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm hover:shadow-md transition">
+          {/* Card 2: Average Time Per Stage */}
+          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm flex flex-col justify-between">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Avg Time Per Stage</span>
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Average Time Per Stage</span>
               <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-lg">
                 ⏱️
               </div>
             </div>
-            <div className="mt-4 flex items-baseline justify-between">
-              <p className="text-3xl font-extrabold text-slate-900">{avgTimePerStage} hrs</p>
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800">
-                Stage Pace
-              </span>
+            <div className="mt-4">
+              <p className="text-3xl font-extrabold text-slate-900">{avgTimePerStage} <span className="text-lg text-slate-500 font-normal">hrs</span></p>
             </div>
-            <p className="text-xs text-slate-500 mt-2">Average transit time between stages</p>
+            <p className="text-xs text-slate-500 mt-3">Estimated dwell time per fulfillment column</p>
           </div>
 
-          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm hover:shadow-md transition">
+          {/* Card 3: Total Exceptions Today */}
+          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Exceptions Today</span>
               <div className="w-10 h-10 rounded-xl bg-red-50 text-red-600 flex items-center justify-center font-bold text-lg">
-                ⚠️
+                🚨
               </div>
             </div>
-            <div className="mt-4 flex items-baseline justify-between">
+            <div className="mt-4">
               <p className="text-3xl font-extrabold text-red-600">{exceptionsCount}</p>
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-red-100 text-red-800">
-                Flagged Logs
-              </span>
             </div>
-            <p className="text-xs text-slate-500 mt-2">Damaged or missing item flags</p>
+            <p className="text-xs text-slate-500 mt-3">Damaged/missing stock flags in Kanban board</p>
           </div>
+
         </div>
 
-        {/* Middle Section: Chart 1 & Chart 2 */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Feature 2: Smart vs FIFO Benchmark Comparison Card */}
+        <SmartVsFifoComparison />
+
+        {/* Charts Grid Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           
           {/* Chart 1 — Orders by Stage (Bar Chart) */}
-          <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-bold text-slate-900">Orders by Fulfillment Stage</h2>
-                <p className="text-xs text-slate-500">Active order volume across pipeline stages</p>
-              </div>
+          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">Orders by Stage</h2>
+              <p className="text-xs text-slate-500">Distribution of orders across fulfillment columns</p>
             </div>
 
-            <div className="h-72 w-full pt-2">
+            <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={ordersByStageData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <XAxis dataKey="stage" stroke="#64748b" fontSize={12} tickLine={false} />
@@ -192,7 +218,7 @@ export default function AnalyticsPage() {
                   />
                   <Bar dataKey="count" radius={[6, 6, 0, 0]}>
                     {ordersByStageData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                      <Cell key={`cell-${index}`} fill={stageColors[entry.stage] || '#3b82f6'} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -200,77 +226,75 @@ export default function AnalyticsPage() {
             </div>
           </div>
 
-          {/* Chart 2 — Priority Breakdown (Pie/Donut Chart) */}
+          {/* Chart 2 — Priority Breakdown (Donut Chart) */}
           <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4">
             <div>
               <h2 className="text-lg font-bold text-slate-900">Priority Breakdown</h2>
-              <p className="text-xs text-slate-500">Order queue distribution by priority tier</p>
+              <p className="text-xs text-slate-500">Proportion of Urgent vs Standard vs Low priority orders</p>
             </div>
 
-            <div className="h-72 w-full flex items-center justify-center">
+            <div className="h-64 w-full flex items-center justify-center">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={priorityCounts}
+                    data={priorityBreakdownData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={55}
-                    outerRadius={85}
+                    innerRadius={60}
+                    outerRadius={90}
                     paddingAngle={4}
                     dataKey="value"
                   >
-                    {priorityCounts.map((entry, index) => (
-                      <Cell key={`cell-p-${index}`} fill={entry.color} />
+                    {priorityBreakdownData.map((entry, index) => (
+                      <Cell key={`pie-cell-${index}`} fill={priorityColors[entry.name] || '#3b82f6'} />
                     ))}
                   </Pie>
                   <Tooltip
                     contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px', color: '#f8fafc', fontSize: '12px' }}
                   />
-                  <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                  <Legend verticalAlign="bottom" height={36} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
           </div>
+
         </div>
 
         {/* Chart 3 — Stock Levels vs Reorder Point (Horizontal Bar Chart) */}
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              <h2 className="text-lg font-bold text-slate-900">Stock Levels vs Reorder Point</h2>
-              <p className="text-xs text-slate-500">On-hand quantities per SKU (Red = Below Reorder Threshold)</p>
+              <h2 className="text-lg font-bold text-slate-900">Stock Levels vs Reorder Thresholds</h2>
+              <p className="text-xs text-slate-500">Inventory quantity on hand per SKU (Red = at or below reorder point)</p>
             </div>
-            <div className="flex items-center space-x-4 text-xs font-semibold">
-              <span className="flex items-center space-x-1.5">
-                <span className="w-3 h-3 rounded bg-emerald-500"></span>
-                <span className="text-slate-600">Optimal Stock</span>
+            <div className="flex items-center space-x-3 text-xs font-semibold">
+              <span className="flex items-center space-x-1">
+                <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
+                <span className="text-slate-600">Healthy Stock</span>
               </span>
-              <span className="flex items-center space-x-1.5">
-                <span className="w-3 h-3 rounded bg-red-500"></span>
-                <span className="text-slate-600">Reorder Triggered</span>
+              <span className="flex items-center space-x-1">
+                <span className="w-3 h-3 rounded-full bg-red-500"></span>
+                <span className="text-slate-600">Below Reorder Point</span>
               </span>
             </div>
           </div>
 
-          <div className="h-[420px] w-full pt-2">
+          <div className="h-96 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 layout="vertical"
-                data={stockChartData}
-                margin={{ top: 5, right: 30, left: 40, bottom: 5 }}
+                data={stockLevelData}
+                margin={{ top: 10, right: 30, left: 40, bottom: 0 }}
               >
-                <XAxis type="number" stroke="#64748b" fontSize={11} />
-                <YAxis dataKey="sku" type="category" stroke="#64748b" fontSize={11} width={75} tickLine={false} />
+                <XAxis type="number" stroke="#64748b" fontSize={12} />
+                <YAxis dataKey="name" type="category" stroke="#64748b" fontSize={11} tickLine={false} />
                 <Tooltip
                   contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px', color: '#f8fafc', fontSize: '12px' }}
-                  formatter={(value, name, item) => [
-                    `${value} units (Reorder Point: ${item.payload.reorderPoint})`,
-                    item.payload.name
-                  ]}
+                  formatter={(value, name, props) => [`${value} units`, props.payload.fullName]}
                 />
                 <Bar dataKey="quantityOnHand" radius={[0, 4, 4, 0]}>
-                  {stockChartData.map((entry, index) => (
-                    <Cell key={`cell-stock-${index}`} fill={entry.fill} />
+                  {stockLevelData.map((entry, index) => (
+                    <Cell key={`stock-cell-${index}`} fill={entry.isLow ? '#ef4444' : '#10b981'} />
                   ))}
                 </Bar>
               </BarChart>
@@ -278,18 +302,27 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        {/* 5. Bottom Section — Bottleneck Insight Card */}
-        <div className="bg-gradient-to-r from-slate-900 to-indigo-950 rounded-2xl p-6 text-white border border-slate-800 shadow-lg flex items-start space-x-4">
-          <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center font-bold text-xl shrink-0">
-            💡
+        {/* Dynamic Bottleneck Insight Card */}
+        <div className="bg-slate-900 text-white rounded-2xl p-6 sm:p-8 border border-slate-800 shadow-xl space-y-4">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-xl">
+              ⚡
+            </div>
+            <div>
+              <span className="text-xs uppercase font-extrabold tracking-widest text-amber-400">Automated Logistics Intelligence</span>
+              <h2 className="text-xl font-extrabold text-white">Dynamically Generated Bottleneck Insight</h2>
+            </div>
           </div>
-          <div className="space-y-1">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-amber-400">Dynamically Generated Bottleneck Insight</h3>
-            <p className="text-base font-semibold text-slate-100 leading-relaxed">
-              "{bottleneckInsightText}"
-            </p>
-            <p className="text-xs text-slate-400 pt-1">
-              Calculated dynamically from real-time stage volumes across active warehouse queues.
+
+          <div className="bg-slate-950 p-5 rounded-xl border border-slate-800 space-y-2">
+            <div className="flex items-center space-x-2 text-xs font-mono">
+              <span className="text-slate-400">Active Bottleneck Stage:</span>
+              <span className="px-2.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
+                {bottleneckInfo.stageName} ({bottleneckInfo.count || 0} orders)
+              </span>
+            </div>
+            <p className="text-sm font-semibold text-slate-200 leading-relaxed">
+              "{bottleneckInfo.description}"
             </p>
           </div>
         </div>

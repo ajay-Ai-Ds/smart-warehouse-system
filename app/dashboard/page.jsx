@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useWarehouse } from '@/lib/WarehouseContext';
 import WarehouseGrid from '@/components/WarehouseGrid';
 import WarehouseCopilot from '@/components/WarehouseCopilot';
@@ -33,7 +34,7 @@ function getDeadlineCountdown(deadlineString) {
 }
 
 export default function DashboardPage() {
-  const { orders, products, decisionLogs } = useWarehouse();
+  const { orders, products, decisionLogs, isSimulationActive, toggleSimulation } = useWarehouse();
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
@@ -58,7 +59,7 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-12 -m-6 p-6">
       <div className="max-w-7xl mx-auto space-y-8">
         
-        {/* Header Section */}
+        {/* Header Section with Live Simulation Mode Toggle */}
         <div className="bg-slate-900 rounded-2xl p-6 sm:p-8 text-white shadow-xl shadow-slate-900/10 flex flex-col md:flex-row md:items-center justify-between gap-4 border border-slate-800">
           <div>
             <div className="flex items-center space-x-3 mb-2">
@@ -69,17 +70,60 @@ export default function DashboardPage() {
             <p className="text-sm text-slate-400 mt-1">Real-time order flow, AI Copilot, and inventory telemetry in INR (₹)</p>
           </div>
 
-          {/* ROI & Financial Value Saved Counter in Indian Rupees (₹) */}
-          <div className="flex items-center space-x-4 bg-slate-950/80 border border-slate-800 p-3.5 rounded-xl">
-            <div className="border-r border-slate-800 pr-4">
-              <span className="text-[10px] text-slate-400 block uppercase font-bold">Stockout Value Saved</span>
-              <span className="text-base font-extrabold text-emerald-400 font-mono">₹12,45,000</span>
-            </div>
-            <div>
-              <span className="text-[10px] text-slate-400 block uppercase font-bold">Labor Hours Saved</span>
-              <span className="text-base font-extrabold text-indigo-400 font-mono">18.4 hrs</span>
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Live Simulation Mode Toggle Button */}
+            <button
+              onClick={toggleSimulation}
+              className={`px-5 py-3 rounded-xl font-bold text-xs transition flex items-center space-x-2.5 shadow-lg ${
+                isSimulationActive
+                  ? 'bg-emerald-600 hover:bg-emerald-500 text-white ring-2 ring-emerald-400 animate-pulse'
+                  : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
+              }`}
+            >
+              {isSimulationActive ? (
+                <>
+                  <span className="w-2.5 h-2.5 rounded-full bg-white animate-ping"></span>
+                  <span>🟢 LIVE — ⏸ Stop Simulation</span>
+                </>
+              ) : (
+                <>
+                  <span>▶ Start Live Simulation Mode</span>
+                </>
+              )}
+            </button>
+
+            {/* ROI & Financial Value Saved Counter in Indian Rupees (₹) */}
+            <div className="flex items-center space-x-4 bg-slate-950/80 border border-slate-800 p-3.5 rounded-xl">
+              <div className="border-r border-slate-800 pr-4">
+                <span className="text-[10px] text-slate-400 block uppercase font-bold">Stockout Value Saved</span>
+                <span className="text-base font-extrabold text-emerald-400 font-mono">₹12,45,000</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-400 block uppercase font-bold">Labor Hours Saved</span>
+                <span className="text-base font-extrabold text-indigo-400 font-mono">18.4 hrs</span>
+              </div>
             </div>
           </div>
+        </div>
+
+        {/* Smart vs FIFO Benchmark Shortcut Banner */}
+        <div className="bg-gradient-to-r from-indigo-900/90 via-slate-900 to-teal-900/90 rounded-2xl p-5 border border-indigo-500/30 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-md">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-xl">
+              📊
+            </div>
+            <div>
+              <span className="text-[10px] font-bold text-indigo-300 uppercase tracking-widest">Algorithmic Proof</span>
+              <h2 className="text-base font-bold text-white">Compare: Smart Priority Allocation vs First-Come-First-Served (FIFO)</h2>
+              <p className="text-xs text-slate-300">Smart Allocation fulfills up to 33% more urgent orders on time compared to naive queuing.</p>
+            </div>
+          </div>
+          <Link
+            href="/analytics"
+            className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs rounded-xl shadow transition shrink-0 text-center"
+          >
+            View Benchmark Analytics ➔
+          </Link>
         </div>
 
         {/* 1. Top Row — 4 Stat Cards */}
@@ -164,9 +208,16 @@ export default function DashboardPage() {
                 <h2 className="text-lg font-bold text-slate-900">Live Order Feed</h2>
                 <p className="text-xs text-slate-500 mt-0.5">Showing 10 most recent incoming and active orders</p>
               </div>
-              <span className="text-xs font-semibold px-3 py-1 bg-slate-200 text-slate-700 rounded-full">
-                Total Orders: {orders.length}
-              </span>
+              <div className="flex items-center space-x-2">
+                {isSimulationActive && (
+                  <span className="px-2.5 py-0.5 bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 text-xs font-mono font-bold rounded-full animate-pulse">
+                    🟢 LIVE SIMULATION ACTIVE
+                  </span>
+                )}
+                <span className="text-xs font-semibold px-3 py-1 bg-slate-200 text-slate-700 rounded-full">
+                  Total Orders: {orders.length}
+                </span>
+              </div>
             </div>
 
             <div className="overflow-y-auto max-h-[520px] divide-y divide-slate-100">
@@ -175,7 +226,7 @@ export default function DashboardPage() {
                 const isOverdue = countdown === 'OVERDUE';
 
                 return (
-                  <div key={order.id} className="p-5 hover:bg-slate-50/80 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div key={order.id} className="p-5 hover:bg-slate-50/80 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fadeIn">
                     <div className="space-y-1">
                       <div className="flex items-center space-x-2">
                         <span className="font-mono text-sm font-extrabold text-slate-900">{order.id}</span>
@@ -242,7 +293,6 @@ export default function DashboardPage() {
               </span>
             </div>
 
-            {/* Terminal Activity Feed connected to shared context */}
             <div className="p-4 overflow-y-auto max-h-[520px] font-mono text-xs space-y-3 bg-slate-950/90 text-slate-300">
               {decisionLogs.map((log) => (
                 <div key={log.id} className="p-3 bg-slate-900/90 rounded-lg border border-slate-800/80 space-y-1 hover:border-slate-700 transition">
