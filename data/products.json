@@ -1,0 +1,162 @@
+[
+  {
+    "id": "PROD-001",
+    "name": "Industrial Wireless Barcode Scanner",
+    "sku": "SKU-1001",
+    "quantityOnHand": 120,
+    "reorderPoint": 30,
+    "velocity": "Fast"
+  },
+  {
+    "id": "PROD-002",
+    "name": "Heavy-Duty Hydraulic Pallet Jack",
+    "sku": "SKU-1002",
+    "quantityOnHand": 4,
+    "reorderPoint": 5,
+    "velocity": "Medium"
+  },
+  {
+    "id": "PROD-003",
+    "name": "Modular Steel Storage Shelving Unit",
+    "sku": "SKU-1003",
+    "quantityOnHand": 45,
+    "reorderPoint": 15,
+    "velocity": "Medium"
+  },
+  {
+    "id": "PROD-004",
+    "name": "Thermal Transfer RFID Label Printer",
+    "sku": "SKU-1004",
+    "quantityOnHand": 24,
+    "reorderPoint": 8,
+    "velocity": "Fast"
+  },
+  {
+    "id": "PROD-005",
+    "name": "Heavy-Duty Stretch Film Rolls (Pack of 6)",
+    "sku": "SKU-1005",
+    "quantityOnHand": 350,
+    "reorderPoint": 80,
+    "velocity": "Fast"
+  },
+  {
+    "id": "PROD-006",
+    "name": "Corrugated Boxes 12x12x12 (Pack of 25)",
+    "sku": "SKU-1006",
+    "quantityOnHand": 480,
+    "reorderPoint": 100,
+    "velocity": "Fast"
+  },
+  {
+    "id": "PROD-007",
+    "name": "Anti-Static Bubble Wrap Roll (500m)",
+    "sku": "SKU-1007",
+    "quantityOnHand": 65,
+    "reorderPoint": 20,
+    "velocity": "Medium"
+  },
+  {
+    "id": "PROD-008",
+    "name": "Ergonomic Packing Station Workbench",
+    "sku": "SKU-1008",
+    "quantityOnHand": 3,
+    "reorderPoint": 4,
+    "velocity": "Slow"
+  },
+  {
+    "id": "PROD-009",
+    "name": "High-Reach Electric Stacker Lift",
+    "sku": "SKU-1009",
+    "quantityOnHand": 1,
+    "reorderPoint": 2,
+    "velocity": "Slow"
+  },
+  {
+    "id": "PROD-010",
+    "name": "Digital Benchtop Shipping Scale 150kg",
+    "sku": "SKU-1010",
+    "quantityOnHand": 32,
+    "reorderPoint": 10,
+    "velocity": "Medium"
+  },
+  {
+    "id": "PROD-011",
+    "name": "Cut-Resistant Warehouse Work Gloves (Pack of 10)",
+    "sku": "SKU-1011",
+    "quantityOnHand": 210,
+    "reorderPoint": 50,
+    "velocity": "Fast"
+  },
+  {
+    "id": "PROD-012",
+    "name": "Conveyor Belt Motor Unit 24V",
+    "sku": "SKU-1012",
+    "quantityOnHand": 5,
+    "reorderPoint": 5,
+    "velocity": "Slow"
+  },
+  {
+    "id": "PROD-013",
+    "name": "Poly Mailers 10x13 inch (Pack of 1000)",
+    "sku": "SKU-1013",
+    "quantityOnHand": 520,
+    "reorderPoint": 120,
+    "velocity": "Fast"
+  },
+  {
+    "id": "PROD-014",
+    "name": "Heavy-Duty Hand Truck Dolly",
+    "sku": "SKU-1014",
+    "quantityOnHand": 28,
+    "reorderPoint": 8,
+    "velocity": "Medium"
+  },
+  {
+    "id": "PROD-015",
+    "name": "Industrial Safety Warning Floor Tape (50m)",
+    "sku": "SKU-1015",
+    "quantityOnHand": 140,
+    "reorderPoint": 35,
+    "velocity": "Medium"
+  },
+  {
+    "id": "PROD-016",
+    "name": "Automatic Tape Dispenser System",
+    "sku": "SKU-1016",
+    "quantityOnHand": 22,
+    "reorderPoint": 6,
+    "velocity": "Medium"
+  },
+  {
+    "id": "PROD-017",
+    "name": "Smart Optical Sorting Sensor Node",
+    "sku": "SKU-1017",
+    "quantityOnHand": 2,
+    "reorderPoint": 3,
+    "velocity": "Slow"
+  },
+  {
+    "id": "PROD-018",
+    "name": "Forklift Battery Fast-Charger 48V",
+    "sku": "SKU-1018",
+    "quantityOnHand": 1,
+    "reorderPoint": 2,
+    "velocity": "Slow"
+  },
+  {
+    "id": "PROD-019",
+    "name": "Self-Adhesive Packing Slip Envelopes (Pack of 500)",
+    "sku": "SKU-1019",
+    "quantityOnHand": 310,
+    "reorderPoint": 75,
+    "velocity": "Fast"
+  },
+  {
+    "id": "PROD-020",
+    "name": "Heavy-Duty Cable Zip Ties 12-inch (Pack of 500)",
+    "sku": "SKU-1020",
+    "quantityOnHand": 190,
+    "reorderPoint": 40,
+    "velocity": "Fast"
+  }
+]
