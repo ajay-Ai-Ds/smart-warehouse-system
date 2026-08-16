@@ -63,17 +63,17 @@ export default function DashboardPage() {
           <div>
             <div className="flex items-center space-x-3 mb-2">
               <span className="h-3 w-3 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span className="text-xs uppercase tracking-widest font-bold text-slate-400">Warehouse Control Center</span>
+              <span className="text-xs uppercase tracking-widest font-bold text-slate-400">Warehouse Control Center (India Logistics Hub)</span>
             </div>
             <h1 className="text-3xl font-extrabold tracking-tight text-white">Operations Dashboard</h1>
-            <p className="text-sm text-slate-400 mt-1">Real-time order flow, AI Copilot, and inventory telemetry</p>
+            <p className="text-sm text-slate-400 mt-1">Real-time order flow, AI Copilot, and inventory telemetry in INR (₹)</p>
           </div>
 
-          {/* ROI & Financial Value Saved Counter (Judge-Bait Widget) */}
+          {/* ROI & Financial Value Saved Counter in Indian Rupees (₹) */}
           <div className="flex items-center space-x-4 bg-slate-950/80 border border-slate-800 p-3.5 rounded-xl">
             <div className="border-r border-slate-800 pr-4">
               <span className="text-[10px] text-slate-400 block uppercase font-bold">Stockout Value Saved</span>
-              <span className="text-base font-extrabold text-emerald-400 font-mono">$14,850</span>
+              <span className="text-base font-extrabold text-emerald-400 font-mono">₹12,45,000</span>
             </div>
             <div>
               <span className="text-[10px] text-slate-400 block uppercase font-bold">Labor Hours Saved</span>
@@ -145,7 +145,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* AI Copilot & Crisis Simulator Widgets (Hackathon Winners) */}
+        {/* AI Copilot & Crisis Simulator Widgets */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <WarehouseCopilot />
           <DisruptionSimulator />
