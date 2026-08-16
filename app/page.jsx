@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useMemo } from 'react';
+import { Suspense, useMemo, useState, useRef } from 'react';
 import Link from 'next/link';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
@@ -58,6 +58,8 @@ function HeroFallback() {
 
 export default function Home() {
   const { orders, products } = useWarehouse();
+  const videoRef = useRef(null);
+  const [isMuted, setIsMuted] = useState(true);
 
   // Dynamically calculate business-impact stockout value saved from live orders state
   const stockoutValueSaved = useMemo(() => {
@@ -66,22 +68,31 @@ export default function Home() {
     return baseValue + (allocatedCount * 15000);
   }, [orders]);
 
-  const dispatchedCount = orders.filter(o => o.status === 'Dispatched').length;
-  const fulfillmentPct = Math.round((dispatchedCount / (orders.length || 1)) * 100);
+  const toggleMute = () => {
+    if (videoRef.current) {
+      const nextMutedState = !isMuted;
+      videoRef.current.muted = nextMutedState;
+      setIsMuted(nextMutedState);
+      if (!nextMutedState) {
+        videoRef.current.play().catch(() => {});
+      }
+    }
+  };
 
   return (
     <div className="bg-slate-950 text-white font-sans overflow-x-hidden -m-6">
       
       {/* ========================================================================= */}
-      {/* SECTION 1: HERO (3D Pallets, Background Video & Minimal Tint Overlay) */}
+      {/* SECTION 1: HERO (3D Pallets, Background Video & Audio Controls) */}
       {/* ========================================================================= */}
       <section className="relative min-h-[calc(100vh-65px)] flex flex-col justify-center px-6 py-16 overflow-hidden">
         
-        {/* Full Hero Background Video - Crystal Clear */}
+        {/* Full Hero Background Video */}
         <video
+          ref={videoRef}
           autoPlay
           loop
-          muted
+          muted={isMuted}
           playsInline
           poster="/hero-bg.jpg"
           className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 scale-105"
@@ -89,13 +100,23 @@ export default function Home() {
           <source src="/InShot_20260816_184235558.mp4" type="video/mp4" />
         </video>
 
-        {/* Minimal Tint Overlay — Maximizes Video Visibility */}
+        {/* Minimal Tint Overlay */}
         <div className="absolute inset-0 bg-slate-950/15"></div>
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/70 via-slate-950/20 to-transparent"></div>
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/50 via-transparent to-transparent"></div>
 
         {/* Subtle Ambient Orbs */}
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        {/* Floating Mute/Unmute Audio Button in Corner */}
+        <button
+          onClick={toggleMute}
+          aria-label={isMuted ? "Unmute Video Audio" : "Mute Video Audio"}
+          className="absolute bottom-6 left-6 z-30 px-4 py-2.5 bg-slate-950/85 hover:bg-slate-900 text-white text-xs font-extrabold rounded-2xl border border-slate-700/80 shadow-2xl backdrop-blur-md transition-all flex items-center space-x-2 active:scale-95 cursor-pointer"
+        >
+          <span className="text-base">{isMuted ? '🔇' : '🔊'}</span>
+          <span>{isMuted ? 'Unmute Audio' : 'Audio On'}</span>
+        </button>
 
         <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 items-center gap-12 z-10">
           
