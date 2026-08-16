@@ -69,14 +69,20 @@ export default function Home() {
   return (
     <div className="relative min-h-[calc(100vh-65px)] text-white flex flex-col justify-center overflow-hidden -m-6 px-6 py-12 bg-slate-950">
       
-      {/* Full Hero Cinematic 3D Background Image */}
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-1000 scale-105"
-        style={{ backgroundImage: `url('/hero-bg.jpg')` }}
-      ></div>
+      {/* Full Hero Cinematic 3D Background Video */}
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        poster="/hero-bg.jpg"
+        className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 scale-105"
+      >
+        <source src="/InShot_20260816_184235558.mp4" type="video/mp4" />
+      </video>
 
       {/* Dark Navy & Slate Gradient Backdrop Overlays */}
-      <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-[3px]"></div>
+      <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-[2px]"></div>
       <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/90 to-transparent"></div>
       <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-slate-950/60"></div>
 
