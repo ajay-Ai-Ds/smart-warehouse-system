@@ -72,11 +72,11 @@ export default function OrdersPage() {
   const createdCount = orders.filter(o => o.status === 'Created').length;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-12 -m-6 p-6">
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-12 -m-6 p-4 sm:p-6">
       <div className="max-w-7xl mx-auto space-y-6">
 
         {/* 1. Header row with Orders title, Auto-Allocate All button + filter buttons */}
-        <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm shadow-slate-200/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center space-x-2">
               <span className="h-2.5 w-2.5 rounded-full bg-indigo-600"></span>
@@ -92,31 +92,30 @@ export default function OrdersPage() {
             <button
               onClick={handleAutoAllocate}
               disabled={createdCount === 0}
-              className={`px-5 py-2.5 font-extrabold text-xs rounded-xl shadow-lg transition-all flex items-center space-x-2 ${
+              className={`px-5 py-3 font-extrabold text-xs rounded-xl shadow-lg transition-all flex items-center space-x-2 min-h-[44px] ${
                 createdCount > 0
                   ? 'bg-gradient-to-r from-teal-600 to-indigo-600 hover:from-teal-500 hover:to-indigo-500 text-white shadow-indigo-500/20 active:scale-95'
                   : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
               }`}
             >
-              <span className={`text-base ${isAllocatingAnim ? 'animate-spin' : ''}`}>⚡</span>
-              <span>Auto-Allocate All ({createdCount})</span>
+              <span>⚡ Auto-Allocate All ({createdCount})</span>
             </button>
 
-            {/* Priority Filters */}
-            <div className="flex items-center space-x-1.5 bg-slate-100 p-1.5 rounded-xl border border-slate-200/70">
-              {['All', 'Urgent', 'Standard', 'Low'].map((filter) => {
-                const isActive = activeFilter === filter;
+            {/* Filter Buttons */}
+            <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200/80">
+              {['All', 'Urgent', 'Standard', 'Low'].map((tier) => {
+                const isActive = activeFilter === tier;
                 return (
                   <button
-                    key={filter}
-                    onClick={() => setActiveFilter(filter)}
-                    className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                    key={tier}
+                    onClick={() => setActiveFilter(tier)}
+                    className={`px-3 py-2 text-xs font-bold rounded-lg transition-all min-h-[36px] ${
                       isActive
-                        ? 'bg-white text-indigo-600 shadow-sm shadow-slate-200'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
+                        ? 'bg-white text-slate-900 shadow-sm border border-slate-200'
+                        : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
-                    {filter}
+                    {tier}
                   </button>
                 );
               })}
@@ -127,7 +126,7 @@ export default function OrdersPage() {
         {/* 2 & 3. Orders List sorted by calculatePriorityScore descending */}
         <div className="space-y-4">
           {sortedOrders.length === 0 ? (
-            <div className="bg-white rounded-2xl p-12 text-center border border-slate-200 text-slate-500">
+            <div className="bg-white rounded-2xl p-8 sm:p-12 text-center border border-slate-200 text-slate-500">
               No orders found for priority filter "{activeFilter}".
             </div>
           ) : (
@@ -146,7 +145,7 @@ export default function OrdersPage() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     transition={{ duration: 0.3 }}
-                    className={`bg-white rounded-2xl border transition-all p-5 sm:p-6 space-y-4 shadow-sm hover:shadow-md ${
+                    className={`bg-white rounded-2xl border transition-all p-4 sm:p-6 space-y-4 shadow-sm hover:shadow-md ${
                       isRecentlyUpdated
                         ? 'ring-2 ring-indigo-500 border-indigo-500 bg-indigo-50/20 shadow-indigo-100'
                         : 'border-slate-200/80 hover:border-indigo-200'
@@ -154,11 +153,11 @@ export default function OrdersPage() {
                   >
                     {/* Top Row: Order ID, Customer Name, Score & Badges */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
-                      <div className="flex items-center flex-wrap gap-3">
-                        <span className="font-mono text-base font-extrabold text-slate-900 bg-slate-100 px-3 py-1 rounded-lg border border-slate-200">
+                      <div className="flex items-center flex-wrap gap-2 sm:gap-3">
+                        <span className="font-mono text-sm sm:text-base font-extrabold text-slate-900 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
                           {order.id}
                         </span>
-                        <h2 className="text-base font-bold text-slate-800">{order.customerName}</h2>
+                        <h2 className="text-sm sm:text-base font-bold text-slate-800 break-words leading-tight">{order.customerName}</h2>
 
                         {/* Priority Badge */}
                         {order.priority === 'Urgent' && (
@@ -183,7 +182,7 @@ export default function OrdersPage() {
                         </span>
                       </div>
 
-                      <div className="flex items-center space-x-3">
+                      <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
                         {/* Deadline Countdown */}
                         <div className="text-xs font-medium">
                           <span className="text-slate-400">Deadline: </span>
@@ -211,39 +210,40 @@ export default function OrdersPage() {
                       </div>
                     </div>
 
-                    {/* Middle Row: Items List & Allocation Action */}
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-1">
-                      <div className="space-y-1.5 flex-1">
-                        <span className="text-[11px] uppercase font-bold tracking-wider text-slate-400">Items Requested</span>
-                        <div className="flex flex-wrap gap-2">
-                          {order.items.map((item, idx) => {
-                            const productName = productMap.get(item.productId) || item.productId;
-                            return (
-                              <span
-                                key={idx}
-                                className="text-xs font-medium bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg border border-slate-200/80 flex items-center space-x-1.5"
-                              >
-                                <span className="font-bold text-indigo-600">{item.qty}x</span>
-                                <span>{productName}</span>
-                              </span>
-                            );
-                          })}
-                        </div>
-                      </div>
+                    {/* Middle Section: Items Requested Breakdown */}
+                    <div className="space-y-2">
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Line Items Requested:</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                        {order.items.map((item, idx) => {
+                          const productName = productMap.get(item.productId) || item.productId;
 
-                      {/* "Allocate Stock" button (only visible if status is "Created") */}
-                      {order.status === 'Created' && (
-                        <div className="md:self-end">
-                          <button
-                            onClick={() => allocateSingleOrder(order.id)}
-                            className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-md shadow-indigo-500/20 transition-all flex items-center space-x-1.5"
-                          >
-                            <span>⚡ Allocate Stock</span>
-                          </button>
-                        </div>
-                      )}
+                          return (
+                            <div key={idx} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200/60 text-xs">
+                              <span className="font-semibold text-slate-700 truncate mr-2">{productName}</span>
+                              <span className="font-mono font-bold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200 shrink-0">
+                                {item.qty} u
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
 
+                    {/* Bottom Action Footer */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-100">
+                      <div className="text-[11px] text-slate-400 font-mono">
+                        Created: {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+
+                      {order.status === 'Created' && (
+                        <button
+                          onClick={() => allocateSingleOrder(order.id)}
+                          className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-md transition active:scale-95 self-end sm:self-auto min-h-[42px]"
+                        >
+                          Allocate Stock ➔
+                        </button>
+                      )}
+                    </div>
                   </motion.div>
                 );
               })}
