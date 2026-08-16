@@ -9,7 +9,7 @@ export default function WarehouseCopilot() {
   const [chatHistory, setChatHistory] = useState([
     {
       sender: 'ai',
-      text: 'Hello! I am your Logistics AI Copilot. Ask me anything about stock availability, order delays, or reorder priorities.'
+      text: 'Hello! I am your Logistics AI Copilot. Ask me live questions about order delays, SKU reorders, or SLA fulfillment rates.'
     }
   ]);
 
@@ -23,33 +23,71 @@ export default function WarehouseCopilot() {
     const q = textToAsk || query;
     if (!q.trim()) return;
 
-    // Append user question
     const userMsg = { sender: 'user', text: q };
     let aiResponse = '';
-
     const lowerQ = q.toLowerCase();
 
-    if (lowerQ.includes('delay') || lowerQ.includes('1019') || lowerQ.includes('why')) {
-      const order1019 = orders.find(o => o.id.includes('1019'));
-      if (order1019) {
-        aiResponse = `Order ${order1019.id} (${order1019.priority} priority) was delayed because requested item quantity exceeded current available stock. High-priority Urgent orders (Scores >180) claimed inventory first.`;
-      } else {
-        aiResponse = `Orders are delayed when required stock falls below requested quantities and higher-priority Urgent orders consume available stock first.`;
+    // 1. Order Specific Delay Lookup (Dynamically inspects orders & decisionLogs state)
+    const orderIdMatch = q.match(/ORD-\d+/i) || q.match(/\b\d{4}\b/);
+    
+    if (orderIdMatch || lowerQ.includes('delay') || lowerQ.includes('why')) {
+      let targetOrder = null;
+      if (orderIdMatch) {
+        const matchedIdStr = orderIdMatch[0].toUpperCase();
+        targetOrder = orders.find(o => o.id.toUpperCase().includes(matchedIdStr));
       }
-    } else if (lowerQ.includes('reorder') || lowerQ.includes('sku') || lowerQ.includes('emergency')) {
-      const lowStock = products.filter(p => Number(p.quantityOnHand) <= Number(p.reorderPoint));
-      if (lowStock.length > 0) {
-        const skus = lowStock.map(p => `${p.sku} (${p.name})`).join(', ');
-        aiResponse = `Top emergency reorder priorities: ${skus}. Total ${lowStock.length} SKU(s) currently below threshold.`;
-      } else {
-        aiResponse = `All 20 SKU stock levels are currently healthy above minimum reorder points.`;
+
+      if (!targetOrder && lowerQ.includes('1019')) {
+        targetOrder = orders.find(o => o.id.includes('1019'));
       }
-    } else if (lowerQ.includes('rate') || lowerQ.includes('fulfillment') || lowerQ.includes('stat')) {
-      const dispatched = orders.filter(o => o.status === 'Dispatched').length;
-      const rate = Math.round((dispatched / orders.length) * 100);
-      aiResponse = `Current fulfillment completion rate is ${rate}% (${dispatched}/${orders.length} orders dispatched today).`;
-    } else {
-      aiResponse = `Logistics Engine Analysis: Evaluated ${orders.length} orders across 20 SKUs. Priority scoring algorithm is active and enforcing SLA deadlines.`;
+
+      if (!targetOrder) {
+        // Find any delayed / waiting / partial order from live state
+        targetOrder = orders.find(o => o.status === 'Waiting' || o.status === 'Partial') || orders[0];
+      }
+
+      if (targetOrder) {
+        // Find decision log entry corresponding to this order ID
+        const matchedLog = decisionLogs.find(l => l.text.includes(targetOrder.id));
+
+        if (matchedLog) {
+          aiResponse = `Order #${targetOrder.id} (${targetOrder.priority} Priority, Customer: ${targetOrder.customerName}, Status: ${targetOrder.status}) Decision Log Entry: "${matchedLog.text}"`;
+        } else {
+          aiResponse = `Order #${targetOrder.id} (${targetOrder.priority} Priority, Customer: ${targetOrder.customerName}) is currently in status "${targetOrder.status}". Items requested: ${targetOrder.items.map(i => `${i.qty} units`).join(', ')}. Priority Score: ${targetOrder.status === 'Created' ? 'Pending Allocation' : 'Processed'}.`;
+        }
+      } else {
+        aiResponse = `No specific order matched your query. Currently tracking ${orders.length} active orders in system state.`;
+      }
+    } 
+    // 2. Emergency Reorder SKUs (Queries current product state)
+    else if (lowerQ.includes('reorder') || lowerQ.includes('sku') || lowerQ.includes('emergency') || lowerQ.includes('stock')) {
+      const lowStockProducts = products.filter(p => Number(p.quantityOnHand) <= Number(p.reorderPoint));
+
+      if (lowStockProducts.length > 0) {
+        const skuDetails = lowStockProducts.map(
+          (p, i) => `${i + 1}) ${p.sku} (${p.name}): ${p.quantityOnHand} units on hand (Reorder Point: ${p.reorderPoint})`
+        ).join('; ');
+
+        aiResponse = `Currently ${lowStockProducts.length} SKU(s) require emergency reorder: ${skuDetails}.`;
+      } else {
+        aiResponse = `All ${products.length} catalog SKUs currently have healthy stock levels above minimum reorder points.`;
+      }
+    } 
+    // 3. Live Fulfillment Rate Calculation
+    else if (lowerQ.includes('rate') || lowerQ.includes('fulfillment') || lowerQ.includes('dispatched') || lowerQ.includes('stat')) {
+      const totalOrders = orders.length;
+      const dispatchedCount = orders.filter(o => o.status === 'Dispatched').length;
+      const allocatedCount = orders.filter(o => o.status === 'Allocated').length;
+      const pickingCount = orders.filter(o => o.status === 'Picking').length;
+
+      const rate = totalOrders > 0 ? Math.round((dispatchedCount / totalOrders) * 100) : 0;
+
+      aiResponse = `Live SLA Fulfillment Completion Rate: ${rate}% (${dispatchedCount} of ${totalOrders} total orders dispatched). Currently ${pickingCount} orders in active picking and ${allocatedCount} orders fully allocated.`;
+    } 
+    // 4. Default Dynamic Fallback
+    else {
+      const urgentCount = orders.filter(o => o.priority === 'Urgent').length;
+      aiResponse = `Logistics AI Copilot evaluated ${orders.length} live orders and ${products.length} SKUs. Currently tracking ${urgentCount} Urgent SLA orders. System priority scoring algorithm is active.`;
     }
 
     setChatHistory(prev => [...prev, userMsg, { sender: 'ai', text: aiResponse }]);
@@ -65,11 +103,11 @@ export default function WarehouseCopilot() {
           </div>
           <div>
             <h2 className="text-base font-bold text-white tracking-tight">Warehouse AI Copilot</h2>
-            <p className="text-[11px] text-slate-400">Ask natural language questions about logistics decisions</p>
+            <p className="text-[11px] text-slate-400">Live dynamic inspector connected to system state</p>
           </div>
         </div>
-        <span className="px-2.5 py-0.5 bg-teal-500/10 text-teal-400 border border-teal-500/20 text-[10px] font-mono font-bold rounded-full">
-          AI ONLINE
+        <span className="px-2.5 py-0.5 bg-teal-500/10 text-teal-400 border border-teal-500/20 text-[10px] font-mono font-bold rounded-full animate-pulse">
+          LIVE DATA CONNECTED
         </span>
       </div>
 
@@ -79,7 +117,7 @@ export default function WarehouseCopilot() {
           <button
             key={idx}
             onClick={() => handleAsk(sq)}
-            className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded-lg border border-slate-700 transition"
+            className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded-lg border border-slate-700 transition text-left"
           >
             💡 {sq}
           </button>
@@ -102,7 +140,7 @@ export default function WarehouseCopilot() {
             >
               {msg.sender === 'ai' && (
                 <span className="text-[10px] font-bold text-teal-400 block mb-1 uppercase tracking-wider">
-                  Logistics Copilot
+                  Logistics Copilot (Live State)
                 </span>
               )}
               <p>{msg.text}</p>
@@ -115,7 +153,7 @@ export default function WarehouseCopilot() {
       <div className="flex items-center space-x-2 pt-1">
         <input
           type="text"
-          placeholder="Ask AI Copilot about any order or stock item..."
+          placeholder="Ask AI Copilot about any order ID, SKU reorder, or rate..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleAsk()}
