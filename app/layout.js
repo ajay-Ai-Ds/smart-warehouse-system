@@ -4,9 +4,46 @@ import { WarehouseProvider } from "@/lib/WarehouseContext";
 import "./globals.css";
 
 export const metadata = {
-  title: "Smart Warehouse — Order Fulfillment System",
+  metadataBase: new URL('https://smart-warehouse-system-three.vercel.app'),
+  title: {
+    default: 'Smart Warehouse — Order Fulfillment & Inventory Optimization System',
+    template: '%s | Smart Warehouse System',
+  },
   description:
-    "AI-Powered Warehouse Inventory & Order Fulfillment Optimization System with real-time priority scoring, 2.5D warehouse grid, and Kanban fulfillment pipeline.",
+    'AI-Powered Warehouse Inventory & Order Fulfillment Optimization System with real-time priority scoring, 2.5D warehouse grid, Smart vs FIFO benchmarking, and Kanban fulfillment pipeline.',
+  keywords: [
+    'Smart Warehouse',
+    'Order Fulfillment',
+    'Inventory Management',
+    'Priority Allocation Engine',
+    'Kanban Logistics',
+    'Next.js 16',
+    'Supply Chain Optimization',
+  ],
+  authors: [{ name: 'Logistics AI Team' }],
+  robots: {
+    index: true,
+    follow: true,
+  },
+  openGraph: {
+    title: 'Smart Warehouse — Order Fulfillment System',
+    description: 'AI-Powered Warehouse Inventory & Order Fulfillment Optimization System.',
+    url: 'https://smart-warehouse-system-three.vercel.app',
+    siteName: 'Smart Warehouse Operations',
+    locale: 'en_IN',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Smart Warehouse — Order Fulfillment System',
+    description: 'AI-Powered Warehouse Inventory & Order Fulfillment Optimization System.',
+  },
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#020617',
 };
 
 /**
