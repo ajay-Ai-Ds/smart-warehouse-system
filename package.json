@@ -2,10 +2,12 @@
   "name": "smart-warehouse-system",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "test": "node --test lib/*.test.js"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.8",

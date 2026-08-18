@@ -22,43 +22,47 @@ export default function WarehouseGrid() {
   const isAllocatingActive = recentlyAllocatedIds && recentlyAllocatedIds.size > 0;
 
   return (
-    <div className="bg-slate-900 rounded-2xl border border-slate-800 p-4 sm:p-6 space-y-4 shadow-xl">
+    <section 
+      aria-label="Warehouse Storage Grid" 
+      className="bg-slate-900 rounded-2xl border border-slate-800 p-4 sm:p-6 space-y-4 shadow-xl"
+    >
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
         <div>
           <div className="flex items-center space-x-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-teal-400 animate-pulse"></span>
+            <span className="w-2.5 h-2.5 rounded-full bg-teal-400 animate-pulse" aria-hidden="true"></span>
             <h2 className="text-lg font-bold text-white tracking-tight">Warehouse Overview</h2>
           </div>
           <p className="text-xs text-slate-400 mt-0.5">2.5D Isometric Inventory Storage Grid (24 Zones)</p>
         </div>
 
         {/* Bin Color Legend */}
-        <div className="flex flex-wrap items-center gap-3 text-xs font-semibold">
+        <div className="flex flex-wrap items-center gap-3 text-xs font-semibold" role="region" aria-label="Inventory status legend">
           <span className="flex items-center space-x-1.5">
-            <span className="w-3 h-3 rounded bg-emerald-500 shadow-sm shadow-emerald-500/50"></span>
+            <span className="w-3 h-3 rounded bg-emerald-500 shadow-sm shadow-emerald-500/50" aria-hidden="true"></span>
             <span className="text-slate-300">Healthy (&gt;1.5x)</span>
           </span>
           <span className="flex items-center space-x-1.5">
-            <span className="w-3 h-3 rounded bg-amber-500 shadow-sm shadow-amber-500/50"></span>
+            <span className="w-3 h-3 rounded bg-amber-500 shadow-sm shadow-amber-500/50" aria-hidden="true"></span>
             <span className="text-slate-300">Low (1-1.5x)</span>
           </span>
           <span className="flex items-center space-x-1.5">
-            <span className="w-3 h-3 rounded bg-red-500 shadow-sm shadow-red-500/50"></span>
+            <span className="w-3 h-3 rounded bg-red-500 shadow-sm shadow-red-500/50" aria-hidden="true"></span>
             <span className="text-slate-300">Reorder Triggered</span>
           </span>
         </div>
       </div>
 
-      {/* 2.5D Isometric Canvas Container (Mobile-Optimized Horizontal Scroll) */}
+      {/* 2.5D Isometric Canvas Container */}
       <div className="relative py-8 px-2 sm:px-4 flex justify-center items-center min-h-[340px] overflow-x-auto bg-slate-950/80 rounded-xl border border-slate-800 scrollbar-thin">
-        
         {/* Subtle background gridline pattern */}
-        <div className="absolute inset-0 opacity-20 pointer-events-none bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:16px_16px]"></div>
+        <div className="absolute inset-0 opacity-20 pointer-events-none bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:16px_16px]" aria-hidden="true"></div>
 
         <div className="min-w-[480px] sm:min-w-[550px] flex justify-center items-center py-6">
           {/* Isometric 6x4 Grid Container */}
           <div
+            role="grid"
+            aria-label="2.5D Warehouse Zone Layout"
             className="grid grid-cols-6 gap-2.5 sm:gap-4 md:gap-5 transition-transform duration-500"
             style={{
               transform: 'rotateX(55deg) rotateZ(-45deg)',
@@ -71,6 +75,7 @@ export default function WarehouseGrid() {
 
               const onHand = Number(p.quantityOnHand);
               const reorder = Number(p.reorderPoint);
+              const statusText = onHand <= reorder ? 'Reorder Triggered' : onHand <= reorder * 1.5 ? 'Low Stock' : 'Healthy Stock';
 
               let bgStyle = 'bg-gradient-to-br from-emerald-500 to-emerald-700 border-emerald-400 text-emerald-50 shadow-emerald-950/60';
               
@@ -83,15 +88,26 @@ export default function WarehouseGrid() {
               return (
                 <motion.div
                   key={bin.index}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`${bin.binId}: ${p.name}, Stock level ${onHand} units. Status: ${statusText}`}
                   onMouseEnter={() => setHoveredBin(bin)}
                   onMouseLeave={() => setHoveredBin(null)}
+                  onFocus={() => setHoveredBin(bin)}
+                  onBlur={() => setHoveredBin(null)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setHoveredBin(hoveredBin?.index === bin.index ? null : bin);
+                    }
+                  }}
                   animate={isAllocatingActive ? {
                     scale: [1, 1.15, 1],
                     filter: ['brightness(1)', 'brightness(1.6)', 'brightness(1)']
                   } : {}}
                   transition={{ duration: 0.8, delay: (bin.index % 6) * 0.1 }}
                   whileHover={{ scale: 1.18, z: 20 }}
-                  className={`relative w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-xl ${bgStyle} border-2 cursor-pointer shadow-xl flex flex-col items-center justify-center font-mono font-extrabold text-[10px] sm:text-xs transition-all`}
+                  className={`relative w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-xl ${bgStyle} border-2 cursor-pointer shadow-xl flex flex-col items-center justify-center font-mono font-extrabold text-[10px] sm:text-xs transition-all focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 focus:ring-offset-slate-900`}
                   style={{
                     boxShadow: '4px 8px 12px rgba(0,0,0,0.6), inset 0px 2px 4px rgba(255,255,255,0.3)',
                     transformStyle: 'preserve-3d'
@@ -100,9 +116,10 @@ export default function WarehouseGrid() {
                   <span>{bin.binId}</span>
                   <span className="text-[9px] sm:text-[10px] opacity-90">{onHand}u</span>
 
-                  {/* Tooltip on Hover */}
+                  {/* Tooltip on Hover or Focus */}
                   {hoveredBin?.index === bin.index && (
                     <div
+                      role="tooltip"
                       className="absolute -top-16 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[11px] font-sans p-2.5 rounded-lg border border-slate-700 shadow-2xl z-50 w-44 pointer-events-none"
                       style={{ transform: 'rotateZ(45deg) rotateX(-55deg) translateY(-20px)' }}
                     >
@@ -119,6 +136,6 @@ export default function WarehouseGrid() {
           </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 }

@@ -3,16 +3,16 @@ import { allocateStock, calculatePriorityScore, generateDecisionLog } from '@/li
 import initialProductsData from '@/data/products.json';
 import initialOrdersData from '@/data/orders.json';
 
-// Initialize Upstash Redis (reads UPSTASH_REDIS_REST_URL & UPSTASH_REDIS_REST_TOKEN from env)
-let redis;
-try {
-  redis = new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN,
-  });
-} catch (e) {
-  console.warn('Upstash Redis not configured, falling back to in-memory mode.');
-  redis = null;
+let redis = null;
+if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+  try {
+    redis = new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    });
+  } catch (e) {
+    redis = null;
+  }
 }
 
 // Fallback in-memory store (used when Redis is not configured / local dev)

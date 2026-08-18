@@ -125,7 +125,12 @@ export default function WarehouseCopilot() {
       </div>
 
       {/* Chat History Feed */}
-      <div className="bg-slate-950/80 rounded-xl p-4 max-h-56 overflow-y-auto space-y-3 border border-slate-800 text-xs font-sans">
+      <div 
+        role="log"
+        aria-live="polite"
+        aria-label="Copilot conversation transcript"
+        className="bg-slate-950/80 rounded-xl p-4 max-h-56 overflow-y-auto space-y-3 border border-slate-800 text-xs font-sans"
+      >
         {chatHistory.map((msg, index) => (
           <div
             key={index}
