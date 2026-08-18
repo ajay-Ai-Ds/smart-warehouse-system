@@ -12,6 +12,7 @@
 
 import { useState } from 'react';
 import { useWarehouse } from '@/lib/WarehouseContext';
+import { sanitizeString } from '@/lib/utils';
 
 /**
  * WarehouseCopilot component rendering a real-time conversational query interface.
@@ -37,7 +38,8 @@ export default function WarehouseCopilot() {
   ];
 
   const handleAsk = (textToAsk) => {
-    const q = textToAsk || query;
+    const raw = textToAsk || query;
+    const q = sanitizeString(raw, 300);
     if (!q.trim()) return;
 
     const userMsg = { sender: 'user', text: q };

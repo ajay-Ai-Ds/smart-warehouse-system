@@ -57,13 +57,13 @@ export default function SmartVsFifoComparison() {
         <div>
           <div className="flex items-center space-x-2">
             <span className="h-3 w-3 rounded-full bg-indigo-500 animate-pulse" aria-hidden="true"></span>
-            <span className="text-xs uppercase font-extrabold tracking-widest text-indigo-400">Benchmark Comparison</span>
+            <span className="text-xs uppercase font-extrabold tracking-widest text-indigo-400">Benchmark Comparison (Simulated Dataset)</span>
           </div>
           <h2 className="text-2xl font-extrabold tracking-tight text-white mt-1">
             Smart Priority Allocation vs First-Come-First-Served (FIFO)
           </h2>
           <p className="text-xs text-slate-400 mt-1">
-            Algorithmic proof of SLA optimization comparing priority-based scoring against naive FIFO queuing.
+            Algorithmic proof of SLA optimization comparing priority-based scoring against naive FIFO queuing (Live Calculated Results on Simulated Dataset).
           </p>
         </div>
 

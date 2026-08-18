@@ -51,18 +51,18 @@ export default function WarehouseGrid() {
           <p className="text-xs text-slate-400 mt-0.5">2.5D Isometric Inventory Storage Grid (24 Zones)</p>
         </div>
 
-        {/* Bin Color Legend */}
+        {/* Bin Color & Symbol Legend */}
         <div className="flex flex-wrap items-center gap-3 text-xs font-semibold" role="region" aria-label="Inventory status legend">
           <span className="flex items-center space-x-1.5">
-            <span className="w-3 h-3 rounded bg-emerald-500 shadow-sm shadow-emerald-500/50" aria-hidden="true"></span>
+            <span className="w-4 h-4 rounded bg-emerald-500 shadow-sm shadow-emerald-500/50 flex items-center justify-center text-[10px] font-bold text-white" aria-hidden="true">✓</span>
             <span className="text-slate-300">Healthy (&gt;1.5x)</span>
           </span>
           <span className="flex items-center space-x-1.5">
-            <span className="w-3 h-3 rounded bg-amber-500 shadow-sm shadow-amber-500/50" aria-hidden="true"></span>
+            <span className="w-4 h-4 rounded bg-amber-500 shadow-sm shadow-amber-500/50 flex items-center justify-center text-[10px] font-bold text-white" aria-hidden="true">▲</span>
             <span className="text-slate-300">Low (1-1.5x)</span>
           </span>
           <span className="flex items-center space-x-1.5">
-            <span className="w-3 h-3 rounded bg-red-500 shadow-sm shadow-red-500/50" aria-hidden="true"></span>
+            <span className="w-4 h-4 rounded bg-red-500 shadow-sm shadow-red-500/50 flex items-center justify-center text-[10px] font-bold text-white" aria-hidden="true">!</span>
             <span className="text-slate-300">Reorder Triggered</span>
           </span>
         </div>
@@ -90,13 +90,16 @@ export default function WarehouseGrid() {
 
               const onHand = Number(p.quantityOnHand);
               const reorder = Number(p.reorderPoint);
-              const statusText = onHand <= reorder ? 'Reorder Triggered' : onHand <= reorder * 1.5 ? 'Low Stock' : 'Healthy Stock';
+              const isReorder = onHand <= reorder;
+              const isLow = !isReorder && onHand <= reorder * 1.5;
+              const statusText = isReorder ? 'Reorder Triggered' : isLow ? 'Low Stock' : 'Healthy Stock';
+              const statusIcon = isReorder ? '!' : isLow ? '▲' : '✓';
 
               let bgStyle = 'bg-gradient-to-br from-emerald-500 to-emerald-700 border-emerald-400 text-emerald-50 shadow-emerald-950/60';
               
-              if (onHand <= reorder) {
+              if (isReorder) {
                 bgStyle = 'bg-gradient-to-br from-red-500 to-red-700 border-red-400 text-red-50 shadow-red-950/60';
-              } else if (onHand <= reorder * 1.5) {
+              } else if (isLow) {
                 bgStyle = 'bg-gradient-to-br from-amber-500 to-amber-700 border-amber-300 text-amber-50 shadow-amber-950/60';
               }
 
@@ -105,7 +108,7 @@ export default function WarehouseGrid() {
                   key={bin.index}
                   role="button"
                   tabIndex={0}
-                  aria-label={`${bin.binId}: ${p.name}, Stock level ${onHand} units. Status: ${statusText}`}
+                  aria-label={`${bin.binId}: ${p.name}, Stock level ${onHand} units. Status: ${statusText} (${statusIcon})`}
                   onMouseEnter={() => setHoveredBin(bin)}
                   onMouseLeave={() => setHoveredBin(null)}
                   onFocus={() => setHoveredBin(bin)}
@@ -128,7 +131,12 @@ export default function WarehouseGrid() {
                     transformStyle: 'preserve-3d'
                   }}
                 >
-                  <span>{bin.binId}</span>
+                  <div className="flex items-center space-x-0.5">
+                    <span>{bin.binId}</span>
+                    <span className="text-[8px] font-black bg-black/30 px-1 py-0.2 rounded-xs" aria-hidden="true">
+                      {statusIcon}
+                    </span>
+                  </div>
                   <span className="text-[9px] sm:text-[10px] opacity-90">{onHand}u</span>
 
                   {/* Tooltip on Hover or Focus */}

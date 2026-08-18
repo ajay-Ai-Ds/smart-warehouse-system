@@ -9,54 +9,11 @@
  * @module HomePage
  */
 
-import { Suspense, useMemo, useState, useRef } from 'react';
+import { useMemo, useState, useRef } from 'react';
 import Link from 'next/link';
-import { Canvas } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
+import dynamic from 'next/dynamic';
 import { useWarehouse } from '@/lib/WarehouseContext';
 import { formatINR } from '@/lib/utils';
-
-/**
- * 3D Warehouse Box Stack Component using React Three Fiber.
- * @returns {JSX.Element}
- */
-function WarehouseBoxStack() {
-  const boxes = [
-    // Base Layer
-    { position: [-1.2, 0, -1.2], args: [1.8, 1.2, 1.8], color: '#d97706' },
-    { position: [1.2, 0, -1.2], args: [1.8, 1.2, 1.8], color: '#475569' },
-    { position: [-1.2, 0, 1.2], args: [1.8, 1.2, 1.8], color: '#2563eb' },
-    { position: [1.2, 0, 1.2], args: [1.8, 1.2, 1.8], color: '#d97706' },
-
-    // Second Layer
-    { position: [-0.6, 1.3, -0.6], args: [1.6, 1.1, 1.6], color: '#059669' },
-    { position: [0.6, 1.3, -0.6], args: [1.6, 1.1, 1.6], color: '#d97706' },
-    { position: [0, 1.3, 0.6], args: [1.6, 1.1, 1.6], color: '#dc2626' },
-
-    // Top Layer
-    { position: [0, 2.5, 0], args: [1.4, 1.0, 1.4], color: '#7c3aed' }
-  ];
-
-  return (
-    <group position={[0, -0.8, 0]}>
-      <mesh position={[0, -0.7, 0]}>
-        <boxGeometry args={[4.8, 0.2, 4.8]} />
-        <meshStandardMaterial color="#b45309" roughness={0.8} />
-      </mesh>
-
-      {boxes.map((box, idx) => (
-        <mesh key={idx} position={box.position}>
-          <boxGeometry args={box.args} />
-          <meshStandardMaterial
-            color={box.color}
-            roughness={0.4}
-            metalness={0.1}
-          />
-        </mesh>
-      ))}
-    </group>
-  );
-}
 
 /**
  * Fallback loader component for 3D Canvas.
@@ -67,11 +24,19 @@ function HeroFallback() {
     <div className="w-full h-full flex items-center justify-center bg-slate-950/40">
       <div className="flex items-center space-x-3 text-slate-400 font-mono text-xs">
         <span className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></span>
-        <span>Loading Telemetry...</span>
+        <span>Loading 3D Telemetry...</span>
       </div>
     </div>
   );
 }
+
+/**
+ * Lazy loaded 3D Pallet Canvas using React Three Fiber.
+ */
+const Warehouse3DCanvas = dynamic(() => import('@/components/Warehouse3DCanvas'), {
+  ssr: false,
+  loading: () => <HeroFallback />,
+});
 
 /**
  * Home page landing component.
@@ -207,26 +172,7 @@ export default function Home() {
 
           {/* Right Column: 3D Three.js Interactive Canvas Container */}
           <div className="w-full h-[400px] sm:h-[480px] rounded-3xl bg-slate-950/30 border border-slate-700/80 shadow-2xl relative overflow-hidden backdrop-blur-md" role="region" aria-label="3D Pallet Storage Visualization">
-            <Suspense fallback={<HeroFallback />}>
-              <Canvas
-                camera={{ position: [5, 4, 6], fov: 45 }}
-                style={{ width: '100%', height: '100%' }}
-              >
-                <ambientLight intensity={0.7} />
-                <directionalLight position={[10, 15, 10]} intensity={1.2} />
-                <pointLight position={[-10, -10, -10]} intensity={0.5} />
-                
-                <WarehouseBoxStack />
-
-                <OrbitControls
-                  autoRotate
-                  autoRotateSpeed={1.8}
-                  enableZoom={false}
-                  enablePan={false}
-                  enableRotate={false}
-                />
-              </Canvas>
-            </Suspense>
+            <Warehouse3DCanvas />
 
             <div className="absolute bottom-4 left-4 pointer-events-none px-3 py-1 bg-slate-950/80 border border-slate-800 rounded-lg text-[10px] font-mono text-slate-300 backdrop-blur-sm">
               3D Pallet Telemetry • R3F Renderer
