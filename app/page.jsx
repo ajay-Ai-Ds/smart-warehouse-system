@@ -9,7 +9,7 @@
  * @module HomePage
  */
 
-import { useMemo, useState, useRef } from 'react';
+import { useMemo } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useWarehouse } from '@/lib/WarehouseContext';
@@ -44,8 +44,6 @@ const Warehouse3DCanvas = dynamic(() => import('@/components/Warehouse3DCanvas')
  */
 export default function Home() {
   const { orders, products } = useWarehouse();
-  const videoRef = useRef(null);
-  const [isMuted, setIsMuted] = useState(true);
 
   // Dynamically calculate business-impact stockout value saved from live orders state
   const stockoutValueSaved = useMemo(() => {
@@ -54,55 +52,29 @@ export default function Home() {
     return baseValue + (allocatedCount * 15000);
   }, [orders]);
 
-  const toggleMute = () => {
-    if (videoRef.current) {
-      const nextMutedState = !isMuted;
-      videoRef.current.muted = nextMutedState;
-      setIsMuted(nextMutedState);
-      if (!nextMutedState) {
-        videoRef.current.play().catch(() => {});
-      }
-    }
-  };
-
   return (
     <div className="bg-slate-950 text-white font-sans overflow-x-hidden -m-6">
       
       {/* ========================================================================= */}
-      {/* SECTION 1: HERO (3D Pallets, Background Video & Audio Controls) */}
+      {/* SECTION 1: HERO (3D Pallets & High-Tech Ambient Background) */}
       {/* ========================================================================= */}
       <section aria-label="Hero Section" className="relative min-h-[calc(100vh-65px)] flex flex-col justify-center px-6 py-16 overflow-hidden">
         
-        {/* Full Hero Background Video */}
-        <video
-          ref={videoRef}
-          autoPlay
-          loop
-          muted={isMuted}
-          playsInline
-          poster="/hero-bg.jpg"
-          className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 scale-105"
-        >
-          <source src="/InShot_20260816_184235558.mp4" type="video/mp4" />
-        </video>
+        {/* Full Hero Background Image */}
+        <img
+          src="/hero-bg.jpg"
+          alt="Smart Warehouse Operations Center"
+          className="absolute inset-0 w-full h-full object-cover opacity-25 scale-105 pointer-events-none"
+        />
 
         {/* Minimal Tint Overlay */}
-        <div className="absolute inset-0 bg-slate-950/15" aria-hidden="true"></div>
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/70 via-slate-950/20 to-transparent" aria-hidden="true"></div>
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/50 via-transparent to-transparent" aria-hidden="true"></div>
+        <div className="absolute inset-0 bg-slate-950/40" aria-hidden="true"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/60 to-transparent" aria-hidden="true"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" aria-hidden="true"></div>
 
         {/* Subtle Ambient Orbs */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" aria-hidden="true"></div>
-
-        {/* Floating Mute/Unmute Audio Button in Top Right Corner */}
-        <button
-          onClick={toggleMute}
-          aria-label={isMuted ? "Unmute Video Audio" : "Mute Video Audio"}
-          className="absolute top-6 right-6 z-30 px-4 py-2.5 bg-slate-950/85 hover:bg-slate-900 text-white text-xs font-extrabold rounded-2xl border border-slate-700/80 shadow-2xl backdrop-blur-md transition-all flex items-center space-x-2 active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-400"
-        >
-          <span className="text-base" aria-hidden="true">{isMuted ? '🔇' : '🔊'}</span>
-          <span>{isMuted ? 'Unmute Audio' : 'Audio On'}</span>
-        </button>
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-600/15 rounded-full blur-3xl pointer-events-none" aria-hidden="true"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" aria-hidden="true"></div>
 
         <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 items-center gap-12 z-10">
           
