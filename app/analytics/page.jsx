@@ -1,8 +1,19 @@
 'use client';
 
+/**
+ * AnalyticsPage — Telemetry, Charts & Optimization Intelligence.
+ *
+ * Visualizes order distributions, priority breakdown, stock-level thresholds,
+ * Smart-vs-FIFO benchmark comparisons, dynamic bottleneck detection,
+ * and comprehensive report export.
+ *
+ * @module AnalyticsPage
+ */
+
 import { useMemo } from 'react';
 import { useWarehouse } from '@/lib/WarehouseContext';
 import SmartVsFifoComparison from '@/components/SmartVsFifoComparison';
+import { STAGE_COLORS, PRIORITY_COLORS, STAGE_FLOW } from '@/lib/constants';
 import {
   BarChart,
   Bar,
@@ -13,10 +24,13 @@ import {
   PieChart,
   Pie,
   Cell,
-  Legend,
-  ReferenceLine
+  Legend
 } from 'recharts';
 
+/**
+ * Analytics and optimization page component.
+ * @returns {JSX.Element}
+ */
 export default function AnalyticsPage() {
   const { orders, products, decisionLogs } = useWarehouse();
 
@@ -47,28 +61,12 @@ export default function AnalyticsPage() {
     decisionLogs.filter(l => l.text.includes('flagged') || l.text.includes('exception')).length;
 
   // 2. Chart 1 Data — Orders by Stage
-  const stages = ['Created', 'Allocated', 'Picking', 'Packing', 'QC', 'Dispatched'];
-  const stageColors = {
-    Created: '#64748b',
-    Allocated: '#3b82f6',
-    Picking: '#f59e0b',
-    Packing: '#ea580c',
-    QC: '#9333ea',
-    Dispatched: '#10b981'
-  };
-
-  const ordersByStageData = stages.map(stage => ({
+  const ordersByStageData = STAGE_FLOW.map(stage => ({
     stage,
     count: orders.filter(o => o.status === stage).length
   }));
 
   // 3. Chart 2 Data — Priority Breakdown
-  const priorityColors = {
-    Urgent: '#ef4444',
-    Standard: '#3b82f6',
-    Low: '#64748b'
-  };
-
   const priorityBreakdownData = [
     { name: 'Urgent', value: orders.filter(o => o.priority === 'Urgent').length },
     { name: 'Standard', value: orders.filter(o => o.priority === 'Standard').length },
@@ -86,7 +84,7 @@ export default function AnalyticsPage() {
 
   // 5. Dynamic Bottleneck Analysis computation
   const bottleneckInfo = useMemo(() => {
-    const counts = stages.map(stage => ({
+    const counts = STAGE_FLOW.map(stage => ({
       stage,
       count: orders.filter(o => o.status === stage).length
     }));
@@ -123,33 +121,73 @@ export default function AnalyticsPage() {
     };
   }, [orders]);
 
+  /**
+   * Exports full telemetry summary as an operational analytics report JSON.
+   */
+  const exportAnalyticsReport = () => {
+    const report = {
+      generatedAt: new Date().toISOString(),
+      reportTitle: 'Smart Warehouse Telemetry & Analytics Report',
+      metrics: {
+        totalOrders: totalOrdersCount,
+        dispatchedOrders: dispatchedCount,
+        fulfillmentRatePercent: fulfillmentRate,
+        averageTimePerStageHours: avgTimePerStage,
+        totalExceptions: exceptionsCount,
+        activeBottleneckStage: bottleneckInfo.stageName,
+        bottleneckRecommendation: bottleneckInfo.description
+      },
+      ordersByStage: ordersByStageData,
+      priorityBreakdown: priorityBreakdownData,
+      lowStockSkus: products.filter(p => Number(p.quantityOnHand) <= Number(p.reorderPoint))
+    };
+
+    const dataBlob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `warehouse-analytics-report-${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-12 -m-6 p-6">
       <div className="max-w-7xl mx-auto space-y-8">
         
         {/* Page Header */}
-        <div className="bg-slate-900 rounded-2xl p-6 sm:p-8 text-white shadow-xl shadow-slate-900/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-slate-800">
+        <section aria-label="Analytics Header" className="bg-slate-900 rounded-2xl p-6 sm:p-8 text-white shadow-xl shadow-slate-900/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-slate-800">
           <div>
             <div className="flex items-center space-x-3 mb-2">
-              <span className="h-3 w-3 rounded-full bg-teal-400 animate-pulse"></span>
+              <span className="h-3 w-3 rounded-full bg-teal-400 animate-pulse" aria-hidden="true"></span>
               <span className="text-xs uppercase tracking-widest font-bold text-slate-400">System Telemetry & Insights</span>
             </div>
             <h1 className="text-3xl font-extrabold tracking-tight text-white">Analytics & Optimization</h1>
             <p className="text-sm text-slate-400 mt-1">Real-time performance metrics, stage volumes, and benchmark comparisons</p>
           </div>
-          <div className="flex items-center space-x-2 bg-slate-950 px-4 py-2 rounded-xl border border-slate-800 text-xs font-mono">
-            <span className="text-teal-400 font-bold">● Live Analytics Active</span>
+          <div className="flex items-center space-x-3">
+            <button
+              type="button"
+              onClick={exportAnalyticsReport}
+              aria-label="Download analytics telemetry report"
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow transition cursor-pointer flex items-center space-x-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            >
+              <span>📥 Export Report</span>
+            </button>
+            <div className="flex items-center space-x-2 bg-slate-950 px-4 py-2 rounded-xl border border-slate-800 text-xs font-mono">
+              <span className="text-teal-400 font-bold">● Live Analytics Active</span>
+            </div>
           </div>
-        </div>
+        </section>
 
         {/* 1. Top Row — 3 Summary Stat Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <section aria-label="Analytics Overview Metrics" className="grid grid-cols-1 md:grid-cols-3 gap-6">
           
           {/* Card 1: Fulfillment Rate Today */}
           <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Fulfillment Rate Today</span>
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-lg">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-lg" aria-hidden="true">
                 📈
               </div>
             </div>
@@ -169,7 +207,7 @@ export default function AnalyticsPage() {
           <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Average Time Per Stage</span>
-              <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-lg">
+              <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-lg" aria-hidden="true">
                 ⏱️
               </div>
             </div>
@@ -183,7 +221,7 @@ export default function AnalyticsPage() {
           <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Exceptions Today</span>
-              <div className="w-10 h-10 rounded-xl bg-red-50 text-red-600 flex items-center justify-center font-bold text-lg">
+              <div className="w-10 h-10 rounded-xl bg-red-50 text-red-600 flex items-center justify-center font-bold text-lg" aria-hidden="true">
                 🚨
               </div>
             </div>
@@ -193,7 +231,7 @@ export default function AnalyticsPage() {
             <p className="text-xs text-slate-500 mt-3">Damaged/missing stock flags in Kanban board</p>
           </div>
 
-        </div>
+        </section>
 
         {/* Feature 2: Smart vs FIFO Benchmark Comparison Card */}
         <SmartVsFifoComparison />
@@ -202,7 +240,7 @@ export default function AnalyticsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           
           {/* Chart 1 — Orders by Stage (Bar Chart) */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4">
+          <section aria-label="Orders by Stage Chart" className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4">
             <div>
               <h2 className="text-lg font-bold text-slate-900">Orders by Stage</h2>
               <p className="text-xs text-slate-500">Distribution of orders across fulfillment columns</p>
@@ -218,16 +256,16 @@ export default function AnalyticsPage() {
                   />
                   <Bar dataKey="count" radius={[6, 6, 0, 0]}>
                     {ordersByStageData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={stageColors[entry.stage] || '#3b82f6'} />
+                      <Cell key={`cell-${index}`} fill={STAGE_COLORS[entry.stage] || '#3b82f6'} />
                     ))}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
-          </div>
+          </section>
 
           {/* Chart 2 — Priority Breakdown (Donut Chart) */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4">
+          <section aria-label="Priority Breakdown Donut Chart" className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4">
             <div>
               <h2 className="text-lg font-bold text-slate-900">Priority Breakdown</h2>
               <p className="text-xs text-slate-500">Proportion of Urgent vs Standard vs Low priority orders</p>
@@ -246,7 +284,7 @@ export default function AnalyticsPage() {
                     dataKey="value"
                   >
                     {priorityBreakdownData.map((entry, index) => (
-                      <Cell key={`pie-cell-${index}`} fill={priorityColors[entry.name] || '#3b82f6'} />
+                      <Cell key={`pie-cell-${index}`} fill={PRIORITY_COLORS[entry.name] || '#3b82f6'} />
                     ))}
                   </Pie>
                   <Tooltip
@@ -256,24 +294,24 @@ export default function AnalyticsPage() {
                 </PieChart>
               </ResponsiveContainer>
             </div>
-          </div>
+          </section>
 
         </div>
 
         {/* Chart 3 — Stock Levels vs Reorder Point (Horizontal Bar Chart) */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4">
+        <section aria-label="Stock Levels vs Reorder Thresholds Chart" className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
               <h2 className="text-lg font-bold text-slate-900">Stock Levels vs Reorder Thresholds</h2>
               <p className="text-xs text-slate-500">Inventory quantity on hand per SKU (Red = at or below reorder point)</p>
             </div>
-            <div className="flex items-center space-x-3 text-xs font-semibold">
+            <div className="flex items-center space-x-3 text-xs font-semibold" role="region" aria-label="Stock level chart legend">
               <span className="flex items-center space-x-1">
-                <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
+                <span className="w-3 h-3 rounded-full bg-emerald-500" aria-hidden="true"></span>
                 <span className="text-slate-600">Healthy Stock</span>
               </span>
               <span className="flex items-center space-x-1">
-                <span className="w-3 h-3 rounded-full bg-red-500"></span>
+                <span className="w-3 h-3 rounded-full bg-red-500" aria-hidden="true"></span>
                 <span className="text-slate-600">Below Reorder Point</span>
               </span>
             </div>
@@ -300,12 +338,12 @@ export default function AnalyticsPage() {
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </section>
 
         {/* Dynamic Bottleneck Insight Card */}
-        <div className="bg-slate-900 text-white rounded-2xl p-6 sm:p-8 border border-slate-800 shadow-xl space-y-4">
+        <section aria-label="Automated Bottleneck Insight" className="bg-slate-900 text-white rounded-2xl p-6 sm:p-8 border border-slate-800 shadow-xl space-y-4">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-xl">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-xl" aria-hidden="true">
               ⚡
             </div>
             <div>
@@ -325,7 +363,7 @@ export default function AnalyticsPage() {
               "{bottleneckInfo.description}"
             </p>
           </div>
-        </div>
+        </section>
 
       </div>
     </div>

@@ -1,38 +1,27 @@
 'use client';
 
+/**
+ * DashboardPage — Main Operations Control Center.
+ *
+ * Provides real-time telemetry metrics, live simulation controls,
+ * AI Copilot, 2.5D storage grid, recent orders stream, and real-time
+ * decision logs with export capability.
+ *
+ * @module DashboardPage
+ */
+
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useWarehouse } from '@/lib/WarehouseContext';
 import WarehouseGrid from '@/components/WarehouseGrid';
 import WarehouseCopilot from '@/components/WarehouseCopilot';
 import DisruptionSimulator from '@/components/DisruptionSimulator';
+import { getDeadlineCountdown, formatINR } from '@/lib/utils';
 
-function getDeadlineCountdown(deadlineString) {
-  if (!deadlineString) return 'No deadline';
-  const now = new Date();
-  const deadline = new Date(deadlineString);
-  const diffMs = deadline - now;
-
-  if (diffMs <= 0) {
-    return 'OVERDUE';
-  }
-
-  const totalMinutes = Math.floor(diffMs / (1000 * 60));
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-
-  if (hours > 24) {
-    const days = Math.floor(hours / 24);
-    return `${days}d ${hours % 24}h remaining`;
-  }
-
-  if (hours > 0) {
-    return `${hours}h ${minutes}m remaining`;
-  }
-
-  return `${minutes}m remaining`;
-}
-
+/**
+ * Operations dashboard component.
+ * @returns {JSX.Element}
+ */
 export default function DashboardPage() {
   const { orders, products, decisionLogs, isSimulationActive, toggleSimulation } = useWarehouse();
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -55,15 +44,35 @@ export default function DashboardPage() {
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .slice(0, 10);
 
+  /**
+   * Exports the decision logs as a formatted JSON file download.
+   */
+  const exportDecisionLogs = () => {
+    const exportData = {
+      exportedAt: new Date().toISOString(),
+      system: 'Smart Warehouse Operations System',
+      totalLogs: decisionLogs.length,
+      logs: decisionLogs
+    };
+
+    const dataBlob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `warehouse-decision-logs-${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-12 -m-6 p-6">
       <div className="max-w-7xl mx-auto space-y-8">
         
         {/* Header Section with Live Simulation Mode Toggle */}
-        <div className="bg-slate-900 rounded-2xl p-6 sm:p-8 text-white shadow-xl shadow-slate-900/10 flex flex-col md:flex-row md:items-center justify-between gap-4 border border-slate-800">
+        <section aria-label="Dashboard Header" className="bg-slate-900 rounded-2xl p-6 sm:p-8 text-white shadow-xl shadow-slate-900/10 flex flex-col md:flex-row md:items-center justify-between gap-4 border border-slate-800">
           <div>
             <div className="flex items-center space-x-3 mb-2">
-              <span className="h-3 w-3 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span className="h-3 w-3 rounded-full bg-emerald-400 animate-pulse" aria-hidden="true"></span>
               <span className="text-xs uppercase tracking-widest font-bold text-slate-400">Warehouse Control Center (India Logistics Hub)</span>
             </div>
             <h1 className="text-3xl font-extrabold tracking-tight text-white">Operations Dashboard</h1>
@@ -73,8 +82,11 @@ export default function DashboardPage() {
           <div className="flex flex-wrap items-center gap-3">
             {/* Live Simulation Mode Toggle Button */}
             <button
+              type="button"
               onClick={toggleSimulation}
-              className={`px-5 py-3 rounded-xl font-bold text-xs transition flex items-center space-x-2.5 shadow-lg ${
+              aria-label={isSimulationActive ? "Stop live simulation mode" : "Start live simulation mode"}
+              aria-pressed={isSimulationActive}
+              className={`px-5 py-3 rounded-xl font-bold text-xs transition flex items-center space-x-2.5 shadow-lg cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-400 ${
                 isSimulationActive
                   ? 'bg-emerald-600 hover:bg-emerald-500 text-white ring-2 ring-emerald-400 animate-pulse'
                   : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
@@ -82,7 +94,7 @@ export default function DashboardPage() {
             >
               {isSimulationActive ? (
                 <>
-                  <span className="w-2.5 h-2.5 rounded-full bg-white animate-ping"></span>
+                  <span className="w-2.5 h-2.5 rounded-full bg-white animate-ping" aria-hidden="true"></span>
                   <span>🟢 LIVE — ⏸ Stop Simulation</span>
                 </>
               ) : (
@@ -93,7 +105,7 @@ export default function DashboardPage() {
             </button>
 
             {/* ROI & Financial Value Saved Counter in Indian Rupees (₹) */}
-            <div className="flex items-center space-x-4 bg-slate-950/80 border border-slate-800 p-3.5 rounded-xl">
+            <div className="flex items-center space-x-4 bg-slate-950/80 border border-slate-800 p-3.5 rounded-xl" role="region" aria-label="ROI financial metrics">
               <div className="border-r border-slate-800 pr-4">
                 <span className="text-[10px] text-slate-400 block uppercase font-bold">Stockout Value Saved</span>
                 <span className="text-base font-extrabold text-emerald-400 font-mono">₹12,45,000</span>
@@ -104,12 +116,12 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
         {/* Smart vs FIFO Benchmark Shortcut Banner */}
         <div className="bg-gradient-to-r from-indigo-900/90 via-slate-900 to-teal-900/90 rounded-2xl p-5 border border-indigo-500/30 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-md">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-xl">
+            <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-xl" aria-hidden="true">
               📊
             </div>
             <div>
@@ -127,12 +139,12 @@ export default function DashboardPage() {
         </div>
 
         {/* 1. Top Row — 4 Stat Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <section aria-label="Key Operational Metrics" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {/* Card 1: Pending Orders */}
           <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm hover:shadow-md transition">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pending Orders</span>
-              <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-lg">
+              <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-lg" aria-hidden="true">
                 📋
               </div>
             </div>
@@ -147,7 +159,7 @@ export default function DashboardPage() {
           <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm hover:shadow-md transition">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Fulfilled Today</span>
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-lg">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-lg" aria-hidden="true">
                 🚚
               </div>
             </div>
@@ -162,7 +174,7 @@ export default function DashboardPage() {
           <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm hover:shadow-md transition">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Low Stock Items</span>
-              <div className="w-10 h-10 rounded-xl bg-red-50 text-red-600 flex items-center justify-center font-bold text-lg">
+              <div className="w-10 h-10 rounded-xl bg-red-50 text-red-600 flex items-center justify-center font-bold text-lg" aria-hidden="true">
                 ⚠️
               </div>
             </div>
@@ -177,7 +189,7 @@ export default function DashboardPage() {
           <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm hover:shadow-md transition">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Active Picking Tasks</span>
-              <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-lg">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-lg" aria-hidden="true">
                 📦
               </div>
             </div>
@@ -187,7 +199,7 @@ export default function DashboardPage() {
             </div>
             <p className="text-xs text-slate-500 mt-2">Orders currently on warehouse floor</p>
           </div>
-        </div>
+        </section>
 
         {/* AI Copilot & Crisis Simulator Widgets */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -202,7 +214,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
           {/* Live Order Feed (2 Cols) */}
-          <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col">
+          <section aria-label="Live Order Feed" className="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col">
             <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
               <div>
                 <h2 className="text-lg font-bold text-slate-900">Live Order Feed</h2>
@@ -279,21 +291,31 @@ export default function DashboardPage() {
                 );
               })}
             </div>
-          </div>
+          </section>
 
-          {/* Right Sidebar — Real-Time Live Decision Log Panel */}
-          <div className="bg-slate-900 rounded-2xl border border-slate-800 shadow-lg flex flex-col overflow-hidden">
+          {/* Right Sidebar — Real-Time Live Decision Log Panel with Export Button */}
+          <section aria-label="Real-time Decision Log" className="bg-slate-900 rounded-2xl border border-slate-800 shadow-lg flex flex-col overflow-hidden">
             <div className="p-5 border-b border-slate-800 bg-slate-950/60 flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-teal-400 animate-pulse"></span>
+                <span className="w-2.5 h-2.5 rounded-full bg-teal-400 animate-pulse" aria-hidden="true"></span>
                 <h2 className="text-sm font-bold text-white uppercase tracking-wider">Decision Log</h2>
               </div>
-              <span className="text-[10px] font-mono px-2 py-0.5 bg-slate-800 text-teal-300 rounded border border-slate-700">
-                LIVE FEED ({decisionLogs.length})
-              </span>
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={exportDecisionLogs}
+                  aria-label="Export decision logs as JSON"
+                  className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-teal-300 text-[10px] font-mono font-bold rounded border border-slate-700 cursor-pointer transition focus:outline-none focus:ring-1 focus:ring-teal-400"
+                >
+                  📥 EXPORT
+                </button>
+                <span className="text-[10px] font-mono px-2 py-0.5 bg-slate-800 text-teal-300 rounded border border-slate-700">
+                  LIVE ({decisionLogs.length})
+                </span>
+              </div>
             </div>
 
-            <div className="p-4 overflow-y-auto max-h-[520px] font-mono text-xs space-y-3 bg-slate-950/90 text-slate-300">
+            <div className="p-4 overflow-y-auto max-h-[520px] font-mono text-xs space-y-3 bg-slate-950/90 text-slate-300" role="log" aria-label="System decision log entries">
               {decisionLogs.map((log) => (
                 <div key={log.id} className="p-3 bg-slate-900/90 rounded-lg border border-slate-800/80 space-y-1 hover:border-slate-700 transition">
                   <div className="flex items-center justify-between text-[11px]">
@@ -315,14 +337,14 @@ export default function DashboardPage() {
             <div className="p-3 bg-slate-950 border-t border-slate-800 text-center">
               <p className="text-[11px] text-slate-500">Log entries auto-generated by Allocation Engine</p>
             </div>
-          </div>
+          </section>
         </div>
 
         {/* Bottom Section — Low Stock Alert Banner */}
-        <div className="bg-white rounded-2xl border border-red-200 shadow-sm p-6 space-y-4">
+        <section aria-label="Low Stock Alert Banner" className="bg-white rounded-2xl border border-red-200 shadow-sm p-6 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-4">
             <div className="flex items-center space-x-3">
-              <div className="w-9 h-9 rounded-xl bg-red-100 text-red-600 flex items-center justify-center font-bold text-lg">
+              <div className="w-9 h-9 rounded-xl bg-red-100 text-red-600 flex items-center justify-center font-bold text-lg" aria-hidden="true">
                 ⚠️
               </div>
               <div>
@@ -335,7 +357,7 @@ export default function DashboardPage() {
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" role="region" aria-label="Low stock product cards">
             {lowStockProducts.map((product) => (
               <div
                 key={product.id}
@@ -364,7 +386,7 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
-        </div>
+        </section>
 
       </div>
     </div>

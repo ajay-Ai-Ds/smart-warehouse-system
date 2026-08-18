@@ -1,17 +1,24 @@
 'use client';
 
+/**
+ * FulfillmentPage — 5-Stage Kanban Order Pipeline.
+ *
+ * Real-time Kanban board managing order transitions across:
+ * Allocated ➔ Picking ➔ Packing ➔ QC ➔ Dispatched with automated
+ * exception simulation and manual resolution controls.
+ *
+ * @module FulfillmentPage
+ */
+
 import { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useWarehouse } from '@/lib/WarehouseContext';
+import { KANBAN_COLUMNS } from '@/lib/constants';
 
-const KANBAN_COLUMNS = [
-  { id: 'Allocated', title: 'Allocated', color: 'blue', border: 'border-blue-200', bg: 'bg-blue-50/50', badgeBg: 'bg-blue-100 text-blue-800' },
-  { id: 'Picking', title: 'Picking', color: 'amber', border: 'border-amber-200', bg: 'bg-amber-50/50', badgeBg: 'bg-amber-100 text-amber-800' },
-  { id: 'Packing', title: 'Packing', color: 'orange', border: 'border-orange-200', bg: 'bg-orange-50/50', badgeBg: 'bg-orange-100 text-orange-800' },
-  { id: 'QC', title: 'QC (Quality Check)', color: 'purple', border: 'border-purple-200', bg: 'bg-purple-50/50', badgeBg: 'bg-purple-100 text-purple-800' },
-  { id: 'Dispatched', title: 'Dispatched', color: 'emerald', border: 'border-emerald-200', bg: 'bg-emerald-50/50', badgeBg: 'bg-emerald-100 text-emerald-800' }
-];
-
+/**
+ * Fulfillment Kanban page component.
+ * @returns {JSX.Element}
+ */
 export default function FulfillmentPage() {
   const { orders, products, moveOrderStage, resolveException } = useWarehouse();
 
@@ -36,11 +43,11 @@ export default function FulfillmentPage() {
       <div className="max-w-[1600px] mx-auto space-y-6">
 
         {/* Header & Flow Legend */}
-        <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm space-y-4">
+        <section aria-label="Kanban Header" className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <div className="flex items-center space-x-2">
-                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" aria-hidden="true"></span>
                 <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">Order Fulfillment Kanban</h1>
               </div>
               <p className="text-xs text-slate-500 mt-1">
@@ -50,26 +57,26 @@ export default function FulfillmentPage() {
           </div>
 
           {/* Workflow Legend */}
-          <div className="pt-3 border-t border-slate-100 flex items-center space-x-2 text-xs overflow-x-auto py-1">
+          <div className="pt-3 border-t border-slate-100 flex items-center space-x-2 text-xs overflow-x-auto py-1" role="region" aria-label="Kanban workflow stage sequence">
             <span className="font-extrabold text-slate-400 uppercase tracking-wider text-[10px] shrink-0">Stage Flow:</span>
             <div className="flex items-center space-x-2 font-medium shrink-0">
               <span className="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-md border border-slate-200">Created</span>
-              <span className="text-slate-400 font-bold">➔</span>
+              <span className="text-slate-400 font-bold" aria-hidden="true">➔</span>
               <span className="px-2.5 py-1 bg-blue-100 text-blue-800 rounded-md font-bold border border-blue-200">Allocated</span>
-              <span className="text-slate-400 font-bold">➔</span>
+              <span className="text-slate-400 font-bold" aria-hidden="true">➔</span>
               <span className="px-2.5 py-1 bg-amber-100 text-amber-800 rounded-md font-bold border border-amber-200">Picking</span>
-              <span className="text-slate-400 font-bold">➔</span>
+              <span className="text-slate-400 font-bold" aria-hidden="true">➔</span>
               <span className="px-2.5 py-1 bg-orange-100 text-orange-800 rounded-md font-bold border border-orange-200">Packing</span>
-              <span className="text-slate-400 font-bold">➔</span>
+              <span className="text-slate-400 font-bold" aria-hidden="true">➔</span>
               <span className="px-2.5 py-1 bg-purple-100 text-purple-800 rounded-md font-bold border border-purple-200">QC</span>
-              <span className="text-slate-400 font-bold">➔</span>
+              <span className="text-slate-400 font-bold" aria-hidden="true">➔</span>
               <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-md font-bold border border-emerald-200">Dispatched</span>
             </div>
           </div>
-        </div>
+        </section>
 
         {/* Kanban Board Container (Horizontal Scroll for Mobile/Tablet) */}
-        <div className="overflow-x-auto pb-4">
+        <section aria-label="Kanban Columns Board" className="overflow-x-auto pb-4">
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-5 min-w-[1250px]">
             {KANBAN_COLUMNS.map((column) => {
               const columnOrders = orders.filter(o => o.status === column.id);
@@ -78,6 +85,8 @@ export default function FulfillmentPage() {
                 <div
                   key={column.id}
                   className={`rounded-2xl border ${column.border} ${column.bg} p-4 flex flex-col min-h-[650px] shadow-sm`}
+                  role="region"
+                  aria-label={`${column.title} column with ${columnOrders.length} orders`}
                 >
                   {/* Column Header */}
                   <div className="flex items-center justify-between pb-3 border-b border-slate-200/80 mb-4">
@@ -157,9 +166,9 @@ export default function FulfillmentPage() {
 
                               {/* Exception Warning Banner if Flagged */}
                               {order.hasException && (
-                                <div className="p-2.5 bg-red-100/80 border border-red-200 rounded-lg space-y-2 text-xs">
+                                <div role="alert" className="p-2.5 bg-red-100/80 border border-red-200 rounded-lg space-y-2 text-xs">
                                   <div className="flex items-center space-x-1.5 text-red-800 font-extrabold text-[11px]">
-                                    <span>⚠️</span>
+                                    <span aria-hidden="true">⚠️</span>
                                     <span>Exception Flagged!</span>
                                   </div>
                                   <p className="text-[10px] text-red-700 leading-tight">
@@ -168,14 +177,18 @@ export default function FulfillmentPage() {
 
                                   <div className="flex flex-col gap-1.5 pt-1">
                                     <button
+                                      type="button"
                                       onClick={() => resolveException(order.id, 'resolve')}
-                                      className="w-full py-1 px-2 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold rounded text-[11px] shadow-xs transition"
+                                      aria-label={`Resolve exception for order ${order.id} and move to packing`}
+                                      className="w-full py-1 px-2 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold rounded text-[11px] shadow-xs transition cursor-pointer"
                                     >
                                       ✓ Resolve &amp; Move to Packing
                                     </button>
                                     <button
+                                      type="button"
                                       onClick={() => resolveException(order.id, 'cancel')}
-                                      className="w-full py-1 px-2 bg-red-600 hover:bg-red-500 text-white font-extrabold rounded text-[11px] transition"
+                                      aria-label={`Cancel order ${order.id} due to exception`}
+                                      className="w-full py-1 px-2 bg-red-600 hover:bg-red-500 text-white font-extrabold rounded text-[11px] transition cursor-pointer"
                                     >
                                       ✖ Cancel Order
                                     </button>
@@ -186,8 +199,10 @@ export default function FulfillmentPage() {
                               {/* Normal Advance Stage Button */}
                               {!order.hasException && nextButtonLabel && (
                                 <button
+                                  type="button"
                                   onClick={() => moveOrderStage(order.id, order.status)}
-                                  className="w-full py-2 px-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg text-xs shadow-xs transition flex items-center justify-center space-x-1 active:scale-98"
+                                  aria-label={`Advance order ${order.id} to next stage: ${nextButtonLabel}`}
+                                  className="w-full py-2 px-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg text-xs shadow-xs transition flex items-center justify-center space-x-1 active:scale-98 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-400"
                                 >
                                   <span>{nextButtonLabel}</span>
                                 </button>
@@ -209,7 +224,7 @@ export default function FulfillmentPage() {
               );
             })}
           </div>
-        </div>
+        </section>
 
       </div>
     </div>

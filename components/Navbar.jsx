@@ -1,18 +1,32 @@
 'use client';
 
+/**
+ * Navbar — Main site navigation bar with responsive mobile drawer,
+ * scroll-aware styling, and a floating scroll-to-top button.
+ *
+ * @module Navbar
+ */
+
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
+/** @type {ReadonlyArray<{name: string, href: string}>} */
 const NAV_ITEMS = [
   { name: 'Home', href: '/' },
   { name: 'Dashboard', href: '/dashboard' },
   { name: 'Orders', href: '/orders' },
   { name: 'Inventory', href: '/inventory' },
   { name: 'Fulfillment', href: '/fulfillment' },
-  { name: 'Analytics', href: '/analytics' }
+  { name: 'Analytics', href: '/analytics' },
 ];
 
+/**
+ * Navbar component rendered at the top of every page. Provides desktop
+ * horizontal navigation links and a mobile hamburger-menu drawer.
+ *
+ * @returns {JSX.Element}
+ */
 export default function Navbar() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -37,6 +51,7 @@ export default function Navbar() {
   return (
     <>
       <nav
+        aria-label="Main navigation"
         className={`sticky top-0 z-50 px-4 sm:px-8 py-3.5 transition-all duration-300 border-b ${
           isScrolled
             ? 'bg-slate-900/95 border-slate-800 shadow-xl shadow-slate-950/30 backdrop-blur-md'
@@ -46,7 +61,7 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           
           {/* Brand & Package Icon */}
-          <Link href="/" className="flex items-center space-x-3 group">
+          <Link href="/" className="flex items-center space-x-3 group" aria-label="Smart Warehouse — Home">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-teal-500 flex items-center justify-center shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform">
               <svg
                 className="w-5 h-5 text-white"
@@ -54,6 +69,7 @@ export default function Navbar() {
                 stroke="currentColor"
                 viewBox="0 0 24 24"
                 xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
               >
                 <path
                   strokeLinecap="round"
@@ -74,7 +90,7 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop Navigation Links */}
-          <div className="hidden md:flex items-center space-x-1 font-medium text-sm">
+          <div className="hidden md:flex items-center space-x-1 font-medium text-sm" role="menubar">
             {NAV_ITEMS.map((item) => {
               const isActive = pathname === item.href;
 
@@ -82,6 +98,8 @@ export default function Navbar() {
                 <Link
                   key={item.href}
                   href={item.href}
+                  role="menuitem"
+                  aria-current={isActive ? 'page' : undefined}
                   className={`px-4 py-2 rounded-xl transition-all duration-200 ${
                     isActive
                       ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-600/30'
@@ -98,14 +116,17 @@ export default function Navbar() {
           <div className="md:hidden">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 focus:outline-none"
-              aria-label="Toggle Menu"
+              className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+              aria-expanded={mobileMenuOpen}
+              aria-controls="mobile-menu"
             >
               <svg
                 className="w-6 h-6"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
+                aria-hidden="true"
               >
                 {mobileMenuOpen ? (
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -119,7 +140,7 @@ export default function Navbar() {
 
         {/* Mobile Drawer */}
         {mobileMenuOpen && (
-          <div className="md:hidden pt-3 pb-2 space-y-1 border-t border-slate-800 mt-3">
+          <div id="mobile-menu" className="md:hidden pt-3 pb-2 space-y-1 border-t border-slate-800 mt-3" role="menu">
             {NAV_ITEMS.map((item) => {
               const isActive = pathname === item.href;
 
@@ -127,6 +148,8 @@ export default function Navbar() {
                 <Link
                   key={item.href}
                   href={item.href}
+                  role="menuitem"
+                  aria-current={isActive ? 'page' : undefined}
                   onClick={() => setMobileMenuOpen(false)}
                   className={`block px-4 py-2.5 rounded-lg text-base font-semibold transition ${
                     isActive
@@ -146,10 +169,10 @@ export default function Navbar() {
       {showScrollTop && (
         <button
           onClick={scrollToTop}
-          aria-label="Scroll to top"
+          aria-label="Scroll to top of page"
           className="fixed bottom-6 right-6 z-50 p-3.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl shadow-2xl shadow-indigo-600/50 border border-indigo-400/40 transition-all hover:scale-110 active:scale-95 animate-fadeIn"
         >
-          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 10l7-7m0 0l7 7m-7-7v18" />
           </svg>
         </button>

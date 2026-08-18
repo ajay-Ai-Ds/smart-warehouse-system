@@ -1,5 +1,15 @@
 'use client';
 
+/**
+ * SmartVsFifoComparison — Algorithmic proof & benchmark visualizer.
+ *
+ * Compares the priority-based Smart Allocation engine against a traditional
+ * First-Come-First-Served (FIFO) queue, demonstrating measurable gains in
+ * SLA compliance and stockout prevention.
+ *
+ * @module SmartVsFifoComparison
+ */
+
 import { useMemo } from 'react';
 import { useWarehouse } from '@/lib/WarehouseContext';
 import { compareSmartVsFIFO } from '@/lib/allocationEngine';
@@ -10,10 +20,14 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  Cell,
   Legend
 } from 'recharts';
 
+/**
+ * SmartVsFifoComparison component rendering comparative telemetry metrics and Recharts visualization.
+ *
+ * @returns {JSX.Element}
+ */
 export default function SmartVsFifoComparison() {
   const { orders, products } = useWarehouse();
 
@@ -36,13 +50,13 @@ export default function SmartVsFifoComparison() {
   ];
 
   return (
-    <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6 sm:p-8 space-y-6 shadow-xl text-white">
+    <section aria-label="Benchmark Comparison Section" className="bg-slate-900 rounded-2xl border border-slate-800 p-6 sm:p-8 space-y-6 shadow-xl text-white">
       
       {/* Section Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-5">
         <div>
           <div className="flex items-center space-x-2">
-            <span className="h-3 w-3 rounded-full bg-indigo-500 animate-pulse"></span>
+            <span className="h-3 w-3 rounded-full bg-indigo-500 animate-pulse" aria-hidden="true"></span>
             <span className="text-xs uppercase font-extrabold tracking-widest text-indigo-400">Benchmark Comparison</span>
           </div>
           <h2 className="text-2xl font-extrabold tracking-tight text-white mt-1">
@@ -60,7 +74,7 @@ export default function SmartVsFifoComparison() {
 
       {/* Dynamic Headline Stat Banner */}
       <div className="bg-gradient-to-r from-indigo-900/60 via-slate-900 to-teal-900/60 p-5 rounded-2xl border border-indigo-500/30 flex items-start space-x-4">
-        <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-xl font-bold shrink-0">
+        <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-xl font-bold shrink-0" aria-hidden="true">
           💡
         </div>
         <div className="space-y-1">
@@ -72,7 +86,7 @@ export default function SmartVsFifoComparison() {
       </div>
 
       {/* Side-by-Side Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" role="region" aria-label="Comparative benchmark metrics">
         
         {/* Card 1: Smart Urgent SLA % */}
         <div className="bg-slate-950/80 p-5 rounded-xl border border-indigo-500/30 space-y-2">
@@ -111,7 +125,7 @@ export default function SmartVsFifoComparison() {
       {/* Recharts Side-by-Side Bar Chart */}
       <div className="pt-2">
         <h3 className="text-sm font-bold text-slate-300 mb-4">Urgent SLA Performance Comparison Chart</h3>
-        <div className="h-64 w-full">
+        <div className="h-64 w-full" role="region" aria-label="Interactive bar chart comparing Smart Allocation vs Naive FIFO">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <XAxis dataKey="metric" stroke="#64748b" fontSize={12} tickLine={false} />
@@ -127,6 +141,6 @@ export default function SmartVsFifoComparison() {
         </div>
       </div>
 
-    </div>
+    </section>
   );
 }

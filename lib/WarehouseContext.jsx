@@ -1,33 +1,44 @@
 'use client';
 
+/**
+ * WarehouseContext — Global state provider for the Smart Warehouse System.
+ *
+ * Manages orders, products, decision logs, live simulation, and
+ * e-commerce sync polling. All dashboard pages consume this context
+ * to stay synchronised with a single source of truth.
+ *
+ * @module WarehouseContext
+ */
+
 import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import initialOrdersData from '@/data/orders.json';
 import initialProductsData from '@/data/products.json';
-import { allocateStock, generateDecisionLog } from '@/lib/allocationEngine';
+import { allocateStock, generateDecisionLog, calculatePriorityScore } from '@/lib/allocationEngine';
+import {
+  STAGE_FLOW,
+  SAMPLE_CUSTOMERS,
+  DEFAULT_DEADLINE_HOURS,
+  ECOMMERCE_SYNC_INTERVAL_MS,
+  SIMULATION_INTERVAL_MS,
+  MAX_SIMULATION_ORDERS,
+  PICKING_EXCEPTION_PROBABILITY,
+} from '@/lib/constants';
 
-const WarehouseContext = createContext();
+const WarehouseContext = createContext(undefined);
 
-const STAGE_FLOW = ['Created', 'Allocated', 'Picking', 'Packing', 'QC', 'Dispatched'];
-
-const SAMPLE_CUSTOMERS = [
-  'Delhivery Express Logistics',
-  'Flipkart Fulfillment Hub',
-  'Amazon India Direct',
-  'Tata Logistics Network',
-  'Reliance Retail Supply',
-  'Blue Dart Express',
-  'Shadowfax Parcel Post',
-  'Ecom Express Cargo',
-  'Mahindra Logistics Center',
-  'Xpressbees Freight'
-];
-
+/**
+ * WarehouseProvider wraps the application tree and exposes shared
+ * warehouse state (orders, products, logs) plus action dispatchers
+ * (allocate, move stage, resolve exception, toggle simulation).
+ *
+ * @param {{ children: React.ReactNode }} props
+ */
 export function WarehouseProvider({ children }) {
   const [orders, setOrders] = useState(initialOrdersData);
   const [products, setProducts] = useState(initialProductsData);
   const [recentlyAllocatedIds, setRecentlyAllocatedIds] = useState(new Set());
   const [isSimulationActive, setIsSimulationActive] = useState(false);
-  const [isEcommerceSyncActive, setIsEcommerceSyncActive] = useState(true); // Live e-commerce sync ON by default
+  const [isEcommerceSyncActive, setIsEcommerceSyncActive] = useState(true);
   const generatedCountRef = useRef(0);
   const lastSyncTimestampRef = useRef(new Date().toISOString());
   const knownEcomOrderIdsRef = useRef(new Set());
@@ -37,38 +48,39 @@ export function WarehouseProvider({ children }) {
       id: 'init-1',
       timestamp: '13:05:12',
       text: 'Order #ORD-1001 (Urgent, Score: 190) — allocated 5/5 units of Industrial Barcode Scanner. Reason: sufficient stock available.',
-      type: 'success'
+      type: 'success',
     },
     {
       id: 'init-2',
       timestamp: '13:02:40',
       text: 'Order #ORD-1004 (Urgent, Score: 180) — allocated 3/3 units of RFID Label Printer. Reason: sufficient stock available.',
-      type: 'success'
+      type: 'success',
     },
     {
       id: 'init-3',
       timestamp: '12:48:15',
       text: 'Order #ORD-1019 (Urgent, Score: 160) — 0/40 units allocated for Corrugated Boxes. Reason: insufficient stock after higher-priority orders fulfilled.',
-      type: 'alert'
+      type: 'alert',
     },
     {
       id: 'init-4',
       timestamp: '12:15:00',
       text: 'SKU-SKU-1009 (High-Reach Electric Stacker Lift) stock below reorder point (1 remaining, reorder point 2) — reorder recommended.',
-      type: 'alert'
-    }
+      type: 'alert',
+    },
   ]);
 
   // ═══════════════════════════════════════════════════════════
-  // 🔴 LIVE E-COMMERCE SYNC — polls Upstash Redis every 3 seconds
-  // This is the magic that connects Quality Enterprises → Dashboard
+  // Live E-Commerce Sync — polls Upstash Redis via /api/orders
   // ═══════════════════════════════════════════════════════════
   useEffect(() => {
     if (!isEcommerceSyncActive) return;
 
     const syncInterval = setInterval(async () => {
       try {
-        const res = await fetch(`/api/orders?since=${encodeURIComponent(lastSyncTimestampRef.current)}`);
+        const res = await fetch(
+          `/api/orders?since=${encodeURIComponent(lastSyncTimestampRef.current)}`
+        );
         if (!res.ok) return;
 
         const data = await res.json();
@@ -80,16 +92,12 @@ export function WarehouseProvider({ children }) {
 
           if (newOrders.length === 0) return;
 
-          // Mark these order IDs as known so we don't re-add them
           newOrders.forEach((o) => knownEcomOrderIdsRef.current.add(o.id));
+          lastSyncTimestampRef.current =
+            data.timestamp || new Date().toISOString();
 
-          // Update last sync timestamp
-          lastSyncTimestampRef.current = data.timestamp || new Date().toISOString();
-
-          // Inject new orders into the live orders list
           setOrders((prevOrders) => [...newOrders, ...prevOrders]);
 
-          // Generate decision logs for each new e-commerce order
           const timestamp = new Date().toLocaleTimeString([], {
             hour: '2-digit',
             minute: '2-digit',
@@ -105,30 +113,31 @@ export function WarehouseProvider({ children }) {
 
           setDecisionLogs((prev) => [...newLogs, ...prev]);
 
-          // Flash highlight the new orders
           const newIds = new Set(newOrders.map((o) => o.id));
           setRecentlyAllocatedIds(newIds);
           setTimeout(() => setRecentlyAllocatedIds(new Set()), 3000);
         }
-      } catch (err) {
-        // Silently fail — network hiccups are normal
-        console.warn('E-commerce sync poll failed:', err.message);
+      } catch {
+        // Network hiccups are expected during polling — silently retry
       }
-    }, 3000); // Poll every 3 seconds
+    }, ECOMMERCE_SYNC_INTERVAL_MS);
 
     return () => clearInterval(syncInterval);
   }, [isEcommerceSyncActive]);
 
+  /** Toggles the e-commerce sync polling on/off. */
   const toggleEcommerceSync = () => {
     setIsEcommerceSyncActive((prev) => !prev);
   };
 
-  // Live Simulation Mode Interval Engine
+  // ═══════════════════════════════════════════════════════════
+  // Live Simulation Mode — generates synthetic orders at intervals
+  // ═══════════════════════════════════════════════════════════
   useEffect(() => {
     if (!isSimulationActive) return;
 
     const simulationInterval = setInterval(() => {
-      if (generatedCountRef.current >= 15) {
+      if (generatedCountRef.current >= MAX_SIMULATION_ORDERS) {
         setIsSimulationActive(false);
         return;
       }
@@ -136,71 +145,94 @@ export function WarehouseProvider({ children }) {
       generatedCountRef.current += 1;
       const nextIdNum = 1040 + generatedCountRef.current;
       const newOrderId = `ORD-${nextIdNum}`;
-      const customer = SAMPLE_CUSTOMERS[Math.floor(Math.random() * SAMPLE_CUSTOMERS.length)];
-      const priority = Math.random() < 0.35 ? 'Urgent' : Math.random() < 0.70 ? 'Standard' : 'Low';
-      
-      const randomProd1 = products[Math.floor(Math.random() * products.length)];
-      const randomProd2 = products[Math.floor(Math.random() * products.length)];
+      const customer =
+        SAMPLE_CUSTOMERS[
+          Math.floor(Math.random() * SAMPLE_CUSTOMERS.length)
+        ];
+      const priority =
+        Math.random() < 0.35
+          ? 'Urgent'
+          : Math.random() < 0.7
+            ? 'Standard'
+            : 'Low';
 
-      const deadlineHours = priority === 'Urgent' ? 2 : priority === 'Standard' ? 6 : 24;
-      const deadlineDate = new Date(Date.now() + deadlineHours * 3600 * 1000).toISOString();
+      const randomProd1 =
+        products[Math.floor(Math.random() * products.length)];
+      const randomProd2 =
+        products[Math.floor(Math.random() * products.length)];
+
+      const deadlineHours = DEFAULT_DEADLINE_HOURS[priority] || 24;
+      const deadlineDate = new Date(
+        Date.now() + deadlineHours * 3600 * 1000
+      ).toISOString();
 
       const newOrder = {
         id: newOrderId,
         customerName: customer,
         items: [
-          { productId: randomProd1.id, qty: Math.floor(Math.random() * 5) + 1 },
-          { productId: randomProd2.id, qty: Math.floor(Math.random() * 10) + 1 }
+          {
+            productId: randomProd1.id,
+            qty: Math.floor(Math.random() * 5) + 1,
+          },
+          {
+            productId: randomProd2.id,
+            qty: Math.floor(Math.random() * 10) + 1,
+          },
         ],
         priority,
         deadline: deadlineDate,
         status: 'Created',
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       };
 
-      // Add order and trigger auto-allocation
-      setOrders(prevOrders => [newOrder, ...prevOrders]);
+      setOrders((prevOrders) => [newOrder, ...prevOrders]);
 
-      // Execute stock allocation
       const currentOrders = [newOrder, ...orders];
       const allocationResults = allocateStock(currentOrders, products);
 
       if (allocationResults.length > 0) {
-        const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        
-        setDecisionLogs(prev => [
+        const timestamp = new Date().toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        });
+
+        setDecisionLogs((prev) => [
           {
             id: `sim-log-${Date.now()}`,
             timestamp,
             text: `LIVE SIMULATION: New Order #${newOrderId} (${priority}) received from ${customer} & evaluated by Allocation Engine.`,
-            type: priority === 'Urgent' ? 'alert' : 'info'
+            type: priority === 'Urgent' ? 'alert' : 'info',
           },
-          ...prev
+          ...prev,
         ]);
       }
 
       setRecentlyAllocatedIds(new Set([newOrderId]));
       setTimeout(() => setRecentlyAllocatedIds(new Set()), 2000);
-
-    }, 15000); // 15s interval
+    }, SIMULATION_INTERVAL_MS);
 
     return () => clearInterval(simulationInterval);
   }, [isSimulationActive, orders, products]);
 
+  /** Toggles live simulation mode on/off. */
   const toggleSimulation = () => {
-    setIsSimulationActive(prev => !prev);
+    setIsSimulationActive((prev) => !prev);
   };
 
-  // Allocate a single order manually
+  /**
+   * Allocates a single order by updating its status to "Allocated".
+   * @param {string} orderId - The ID of the order to allocate.
+   */
   const allocateSingleOrder = (orderId) => {
-    setOrders(prevOrders =>
-      prevOrders.map(order =>
+    setOrders((prevOrders) =>
+      prevOrders.map((order) =>
         order.id === orderId ? { ...order, status: 'Allocated' } : order
       )
     );
-    setRecentlyAllocatedIds(prev => new Set([...prev, orderId]));
+    setRecentlyAllocatedIds((prev) => new Set([...prev, orderId]));
     setTimeout(() => {
-      setRecentlyAllocatedIds(prev => {
+      setRecentlyAllocatedIds((prev) => {
         const next = new Set(prev);
         next.delete(orderId);
         return next;
@@ -208,7 +240,10 @@ export function WarehouseProvider({ children }) {
     }, 2000);
   };
 
-  // Run full Auto-Allocation on all "Created" status orders
+  /**
+   * Runs the full auto-allocation engine across all "Created" orders,
+   * updates stock levels, and generates decision log entries.
+   */
   const runAutoAllocateAll = () => {
     const allocationResults = allocateStock(orders, products);
 
@@ -217,36 +252,39 @@ export function WarehouseProvider({ children }) {
     }
 
     const orderResultsMap = new Map();
-    allocationResults.forEach(res => {
+    allocationResults.forEach((res) => {
       if (!orderResultsMap.has(res.orderId)) {
         orderResultsMap.set(res.orderId, []);
       }
       orderResultsMap.get(res.orderId).push(res);
     });
 
-    const updatedProducts = products.map(product => {
+    const updatedProducts = products.map((product) => {
       const totalDeduction = allocationResults
-        .filter(r => r.productId === product.id)
+        .filter((r) => r.productId === product.id)
         .reduce((sum, r) => sum + r.allocatedQty, 0);
-      
+
       return {
         ...product,
-        quantityOnHand: Math.max(0, product.quantityOnHand - totalDeduction)
+        quantityOnHand: Math.max(0, product.quantityOnHand - totalDeduction),
       };
     });
 
     const affectedIds = new Set();
 
-    const updatedOrders = orders.map(order => {
-      if (order.status !== 'Created' && order.status !== 'Pending') return order;
+    const updatedOrders = orders.map((order) => {
+      if (order.status !== 'Created' && order.status !== 'Pending')
+        return order;
 
       const itemsResult = orderResultsMap.get(order.id) || [];
       if (itemsResult.length === 0) return order;
 
       affectedIds.add(order.id);
 
-      const allAllocated = itemsResult.every(r => r.status === 'Allocated');
-      const allWaiting = itemsResult.every(r => r.status === 'Waiting');
+      const allAllocated = itemsResult.every(
+        (r) => r.status === 'Allocated'
+      );
+      const allWaiting = itemsResult.every((r) => r.status === 'Waiting');
 
       let newStatus = 'Partial';
       if (allAllocated) newStatus = 'Allocated';
@@ -254,15 +292,19 @@ export function WarehouseProvider({ children }) {
 
       return {
         ...order,
-        status: newStatus
+        status: newStatus,
       };
     });
 
-    const newLogs = generateDecisionLog(allocationResults, updatedOrders, updatedProducts);
+    const newLogs = generateDecisionLog(
+      allocationResults,
+      updatedOrders,
+      updatedProducts
+    );
 
     setOrders(updatedOrders);
     setProducts(updatedProducts);
-    setDecisionLogs(prevLogs => [...newLogs, ...prevLogs]);
+    setDecisionLogs((prevLogs) => [...newLogs, ...prevLogs]);
 
     setRecentlyAllocatedIds(affectedIds);
     setTimeout(() => {
@@ -270,7 +312,13 @@ export function WarehouseProvider({ children }) {
     }, 2500);
   };
 
-  // Move order to the next stage in Kanban fulfillment pipeline
+  /**
+   * Advances an order to the next stage in the Kanban fulfillment pipeline.
+   * Has a configurable probability of triggering an exception during Picking.
+   *
+   * @param {string} orderId - The order ID to advance.
+   * @param {string} currentStatus - The order's current fulfillment stage.
+   */
   const moveOrderStage = (orderId, currentStatus) => {
     const currentIndex = STAGE_FLOW.indexOf(currentStatus);
     if (currentIndex === -1 || currentIndex >= STAGE_FLOW.length - 1) return;
@@ -279,13 +327,17 @@ export function WarehouseProvider({ children }) {
 
     let triggerException = false;
     if (nextStatus === 'Picking') {
-      triggerException = Math.random() < 0.10;
+      triggerException = Math.random() < PICKING_EXCEPTION_PROBABILITY;
     }
 
-    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const timestamp = new Date().toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
 
-    setOrders(prevOrders =>
-      prevOrders.map(order => {
+    setOrders((prevOrders) =>
+      prevOrders.map((order) => {
         if (order.id !== orderId) return order;
 
         if (triggerException) {
@@ -293,75 +345,86 @@ export function WarehouseProvider({ children }) {
             ...order,
             status: 'Picking',
             hasException: true,
-            exceptionReason: 'Missing/damaged item during picking'
+            exceptionReason: 'Missing/damaged item during picking',
           };
         }
 
         return {
           ...order,
           status: nextStatus,
-          hasException: false
+          hasException: false,
         };
       })
     );
 
     if (triggerException) {
-      setDecisionLogs(prev => [
+      setDecisionLogs((prev) => [
         {
           id: `log-exc-${Date.now()}`,
           timestamp,
           text: `Order #${orderId} flagged — missing item during picking. Routed to exception queue.`,
-          type: 'alert'
+          type: 'alert',
         },
-        ...prev
+        ...prev,
       ]);
     } else {
-      setDecisionLogs(prev => [
+      setDecisionLogs((prev) => [
         {
           id: `log-mv-${Date.now()}`,
           timestamp,
           text: `Order #${orderId} moved to ${nextStatus} stage.`,
-          type: 'info'
+          type: 'info',
         },
-        ...prev
+        ...prev,
       ]);
     }
   };
 
-  // Resolve exception on an order
+  /**
+   * Resolves an exception on a flagged order, either advancing it to
+   * Packing or cancelling it entirely.
+   *
+   * @param {string} orderId - The order ID with the exception.
+   * @param {'resolve'|'cancel'} [action='resolve'] - Resolution action.
+   */
   const resolveException = (orderId, action = 'resolve') => {
-    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const timestamp = new Date().toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
 
-    setOrders(prevOrders =>
-      prevOrders.map(order => {
+    setOrders((prevOrders) =>
+      prevOrders.map((order) => {
         if (order.id !== orderId) return order;
 
         if (action === 'cancel') {
           return {
             ...order,
             status: 'Cancelled',
-            hasException: false
+            hasException: false,
           };
         }
 
         return {
           ...order,
           status: 'Packing',
-          hasException: false
+          hasException: false,
         };
       })
     );
 
-    setDecisionLogs(prev => [
+    setDecisionLogs((prev) => [
       {
         id: `log-res-${Date.now()}`,
         timestamp,
-        text: action === 'cancel'
-          ? `Order #${orderId} exception resolved by cancelling order.`
-          : `Order #${orderId} exception resolved. Inventory re-verified and moved to Packing.`,
-        type: action === 'cancel' ? 'warning' : 'success'
+        text:
+          action === 'cancel'
+            ? `Order #${orderId} exception resolved by cancelling order.`
+            : `Order #${orderId} exception resolved. Inventory re-verified and moved to Packing.`,
+        type: action === 'cancel' ? 'warning' : 'success',
       },
-      ...prev
+      ...prev,
     ]);
   };
 
@@ -379,7 +442,7 @@ export function WarehouseProvider({ children }) {
         allocateSingleOrder,
         runAutoAllocateAll,
         moveOrderStage,
-        resolveException
+        resolveException,
       }}
     >
       {children}
@@ -387,6 +450,13 @@ export function WarehouseProvider({ children }) {
   );
 }
 
+/**
+ * Custom hook to access the warehouse context. Throws if used outside
+ * a {@link WarehouseProvider}.
+ *
+ * @returns {Object} The warehouse context value.
+ * @throws {Error} If called outside of WarehouseProvider.
+ */
 export function useWarehouse() {
   const context = useContext(WarehouseContext);
   if (!context) {

@@ -1,12 +1,25 @@
 'use client';
 
+/**
+ * Home — Landing page for the Smart Warehouse Operations System.
+ *
+ * Features 3D Three.js pallet visualization, video hero with sound controls,
+ * real-time business telemetry metrics, core feature highlights, and workflow walk-throughs.
+ *
+ * @module HomePage
+ */
+
 import { Suspense, useMemo, useState, useRef } from 'react';
 import Link from 'next/link';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { useWarehouse } from '@/lib/WarehouseContext';
+import { formatINR } from '@/lib/utils';
 
-// 3D Warehouse Box Stack Component
+/**
+ * 3D Warehouse Box Stack Component using React Three Fiber.
+ * @returns {JSX.Element}
+ */
 function WarehouseBoxStack() {
   const boxes = [
     // Base Layer
@@ -45,6 +58,10 @@ function WarehouseBoxStack() {
   );
 }
 
+/**
+ * Fallback loader component for 3D Canvas.
+ * @returns {JSX.Element}
+ */
 function HeroFallback() {
   return (
     <div className="w-full h-full flex items-center justify-center bg-slate-950/40">
@@ -56,6 +73,10 @@ function HeroFallback() {
   );
 }
 
+/**
+ * Home page landing component.
+ * @returns {JSX.Element}
+ */
 export default function Home() {
   const { orders, products } = useWarehouse();
   const videoRef = useRef(null);
@@ -85,7 +106,7 @@ export default function Home() {
       {/* ========================================================================= */}
       {/* SECTION 1: HERO (3D Pallets, Background Video & Audio Controls) */}
       {/* ========================================================================= */}
-      <section className="relative min-h-[calc(100vh-65px)] flex flex-col justify-center px-6 py-16 overflow-hidden">
+      <section aria-label="Hero Section" className="relative min-h-[calc(100vh-65px)] flex flex-col justify-center px-6 py-16 overflow-hidden">
         
         {/* Full Hero Background Video */}
         <video
@@ -101,20 +122,20 @@ export default function Home() {
         </video>
 
         {/* Minimal Tint Overlay */}
-        <div className="absolute inset-0 bg-slate-950/15"></div>
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/70 via-slate-950/20 to-transparent"></div>
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/50 via-transparent to-transparent"></div>
+        <div className="absolute inset-0 bg-slate-950/15" aria-hidden="true"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/70 via-slate-950/20 to-transparent" aria-hidden="true"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/50 via-transparent to-transparent" aria-hidden="true"></div>
 
         {/* Subtle Ambient Orbs */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" aria-hidden="true"></div>
 
         {/* Floating Mute/Unmute Audio Button in Top Right Corner */}
         <button
           onClick={toggleMute}
           aria-label={isMuted ? "Unmute Video Audio" : "Mute Video Audio"}
-          className="absolute top-6 right-6 z-30 px-4 py-2.5 bg-slate-950/85 hover:bg-slate-900 text-white text-xs font-extrabold rounded-2xl border border-slate-700/80 shadow-2xl backdrop-blur-md transition-all flex items-center space-x-2 active:scale-95 cursor-pointer"
+          className="absolute top-6 right-6 z-30 px-4 py-2.5 bg-slate-950/85 hover:bg-slate-900 text-white text-xs font-extrabold rounded-2xl border border-slate-700/80 shadow-2xl backdrop-blur-md transition-all flex items-center space-x-2 active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-400"
         >
-          <span className="text-base">{isMuted ? '🔇' : '🔊'}</span>
+          <span className="text-base" aria-hidden="true">{isMuted ? '🔇' : '🔊'}</span>
           <span>{isMuted ? 'Unmute Audio' : 'Audio On'}</span>
         </button>
 
@@ -124,7 +145,7 @@ export default function Home() {
           <div className="space-y-8 text-center lg:text-left">
             
             <div className="inline-flex items-center space-x-2 px-4 py-1.5 bg-slate-950/80 border border-indigo-500/40 rounded-full text-indigo-300 text-xs font-bold tracking-wide backdrop-blur-md">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" aria-hidden="true"></span>
               <span>Decision-Driven Warehouse Logistics</span>
             </div>
 
@@ -163,7 +184,7 @@ export default function Home() {
             </div>
 
             {/* Metric Highlights */}
-            <div className="grid grid-cols-3 gap-3 pt-6 border-t border-slate-800/80 max-w-lg mx-auto lg:mx-0">
+            <div className="grid grid-cols-3 gap-3 pt-6 border-t border-slate-800/80 max-w-lg mx-auto lg:mx-0" role="region" aria-label="Key telemetry highlights">
               <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800/60 backdrop-blur-md">
                 <p className="text-xl font-extrabold text-white">{products.length} SKUs</p>
                 <p className="text-[11px] text-slate-300">Tracked Catalog</p>
@@ -171,7 +192,7 @@ export default function Home() {
 
               <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800/60 backdrop-blur-md">
                 <p className="text-[15px] sm:text-base font-extrabold text-emerald-400 font-mono leading-tight">
-                  ₹{stockoutValueSaved.toLocaleString('en-IN')}+
+                  {formatINR(stockoutValueSaved)}+
                 </p>
                 <p className="text-[11px] text-slate-300 mt-0.5">Stockout Value Saved</p>
               </div>
@@ -185,7 +206,7 @@ export default function Home() {
           </div>
 
           {/* Right Column: 3D Three.js Interactive Canvas Container */}
-          <div className="w-full h-[400px] sm:h-[480px] rounded-3xl bg-slate-950/30 border border-slate-700/80 shadow-2xl relative overflow-hidden backdrop-blur-md">
+          <div className="w-full h-[400px] sm:h-[480px] rounded-3xl bg-slate-950/30 border border-slate-700/80 shadow-2xl relative overflow-hidden backdrop-blur-md" role="region" aria-label="3D Pallet Storage Visualization">
             <Suspense fallback={<HeroFallback />}>
               <Canvas
                 camera={{ position: [5, 4, 6], fov: 45 }}
@@ -218,7 +239,7 @@ export default function Home() {
       {/* ========================================================================= */}
       {/* SECTION 2: HOW IT WORKS (4-Step Visual Flow) */}
       {/* ========================================================================= */}
-      <section id="how-it-works" className="py-24 px-6 bg-slate-900/50 border-t border-slate-800/80 relative">
+      <section id="how-it-works" aria-label="How it works" className="py-24 px-6 bg-slate-900/50 border-t border-slate-800/80 relative">
         <div className="max-w-7xl mx-auto space-y-12">
           
           <div className="text-center space-y-3 max-w-2xl mx-auto">
@@ -258,7 +279,7 @@ export default function Home() {
               </div>
               <h3 className="text-lg font-bold text-white mb-2">3. Stock Allocated</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Stock is subtracted dynamically across 20 catalog SKUs. Decision logs record plain-English rationale for every assignment.
+                Stock is subtracted dynamically across catalog SKUs. Decision logs record plain-English rationale for every assignment.
               </p>
             </div>
 
@@ -281,7 +302,7 @@ export default function Home() {
       {/* ========================================================================= */}
       {/* SECTION 3: KEY FEATURES (Grid of 6 Feature Cards) */}
       {/* ========================================================================= */}
-      <section className="py-24 px-6 bg-slate-950 border-t border-slate-900">
+      <section aria-label="Core Capabilities" className="py-24 px-6 bg-slate-950 border-t border-slate-900">
         <div className="max-w-7xl mx-auto space-y-12">
           
           <div className="text-center space-y-3 max-w-2xl mx-auto">
@@ -294,7 +315,7 @@ export default function Home() {
             
             {/* Feature 1 */}
             <div className="bg-slate-900/60 p-6 rounded-2xl border border-slate-800 space-y-3 hover:border-indigo-500/40 transition">
-              <div className="w-10 h-10 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center font-bold text-xl">
+              <div className="w-10 h-10 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center font-bold text-xl" aria-hidden="true">
                 ⚡
               </div>
               <h3 className="text-base font-bold text-white">Smart Priority Scoring</h3>
@@ -305,7 +326,7 @@ export default function Home() {
 
             {/* Feature 2 */}
             <div className="bg-slate-900/60 p-6 rounded-2xl border border-slate-800 space-y-3 hover:border-teal-500/40 transition">
-              <div className="w-10 h-10 rounded-xl bg-teal-600/20 text-teal-400 flex items-center justify-center font-bold text-xl">
+              <div className="w-10 h-10 rounded-xl bg-teal-600/20 text-teal-400 flex items-center justify-center font-bold text-xl" aria-hidden="true">
                 📜
               </div>
               <h3 className="text-base font-bold text-white">Real-Time Decision Log</h3>
@@ -316,7 +337,7 @@ export default function Home() {
 
             {/* Feature 3 */}
             <div className="bg-slate-900/60 p-6 rounded-2xl border border-slate-800 space-y-3 hover:border-emerald-500/40 transition">
-              <div className="w-10 h-10 rounded-xl bg-emerald-600/20 text-emerald-400 flex items-center justify-center font-bold text-xl">
+              <div className="w-10 h-10 rounded-xl bg-emerald-600/20 text-emerald-400 flex items-center justify-center font-bold text-xl" aria-hidden="true">
                 🤖
               </div>
               <h3 className="text-base font-bold text-white">Warehouse AI Copilot</h3>
@@ -327,7 +348,7 @@ export default function Home() {
 
             {/* Feature 4 */}
             <div className="bg-slate-900/60 p-6 rounded-2xl border border-slate-800 space-y-3 hover:border-amber-500/40 transition">
-              <div className="w-10 h-10 rounded-xl bg-amber-600/20 text-amber-400 flex items-center justify-center font-bold text-xl">
+              <div className="w-10 h-10 rounded-xl bg-amber-600/20 text-amber-400 flex items-center justify-center font-bold text-xl" aria-hidden="true">
                 🚨
               </div>
               <h3 className="text-base font-bold text-white">Supply Chain Crisis Simulator</h3>
@@ -338,7 +359,7 @@ export default function Home() {
 
             {/* Feature 5 */}
             <div className="bg-slate-900/60 p-6 rounded-2xl border border-slate-800 space-y-3 hover:border-purple-500/40 transition">
-              <div className="w-10 h-10 rounded-xl bg-purple-600/20 text-purple-400 flex items-center justify-center font-bold text-xl">
+              <div className="w-10 h-10 rounded-xl bg-purple-600/20 text-purple-400 flex items-center justify-center font-bold text-xl" aria-hidden="true">
                 📦
               </div>
               <h3 className="text-base font-bold text-white">2.5D Warehouse Grid</h3>
@@ -349,7 +370,7 @@ export default function Home() {
 
             {/* Feature 6 */}
             <div className="bg-slate-900/60 p-6 rounded-2xl border border-slate-800 space-y-3 hover:border-cyan-500/40 transition">
-              <div className="w-10 h-10 rounded-xl bg-cyan-600/20 text-cyan-400 flex items-center justify-center font-bold text-xl">
+              <div className="w-10 h-10 rounded-xl bg-cyan-600/20 text-cyan-400 flex items-center justify-center font-bold text-xl" aria-hidden="true">
                 📊
               </div>
               <h3 className="text-base font-bold text-white">Live Telemetry & Analytics</h3>
@@ -366,7 +387,7 @@ export default function Home() {
       {/* ========================================================================= */}
       {/* SECTION 4: IMPACT NUMBERS (Dynamic Metric Cards) */}
       {/* ========================================================================= */}
-      <section className="py-24 px-6 bg-slate-900/40 border-t border-slate-900 relative">
+      <section aria-label="Business Impact Metrics" className="py-24 px-6 bg-slate-900/40 border-t border-slate-900 relative">
         <div className="max-w-7xl mx-auto space-y-12">
           
           <div className="text-center space-y-3 max-w-2xl mx-auto">
@@ -380,7 +401,7 @@ export default function Home() {
             {/* Impact Metric 1 */}
             <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800 text-center space-y-2">
               <p className="text-3xl sm:text-4xl font-extrabold text-emerald-400 font-mono">
-                ₹{stockoutValueSaved.toLocaleString('en-IN')}+
+                {formatINR(stockoutValueSaved)}+
               </p>
               <p className="text-xs font-bold text-slate-300">Stockout Value Saved</p>
               <p className="text-[11px] text-slate-500">Prevented priority SLA order cancellations</p>
@@ -415,14 +436,14 @@ export default function Home() {
       {/* ========================================================================= */}
       {/* SECTION 5: SEE IT IN ACTION (Dashboard Interactive Preview) */}
       {/* ========================================================================= */}
-      <section className="py-24 px-6 bg-slate-950 border-t border-slate-900">
+      <section aria-label="Operations Center Call to Action" className="py-24 px-6 bg-slate-950 border-t border-slate-900">
         <div className="max-w-7xl mx-auto space-y-12">
           
           <div className="bg-gradient-to-r from-indigo-900/60 via-slate-900 to-teal-900/60 rounded-3xl p-8 sm:p-12 border border-indigo-500/30 text-center space-y-8 shadow-2xl relative overflow-hidden">
             
             {/* Background Glow */}
-            <div className="absolute -top-24 -left-24 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none"></div>
-            <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-teal-500/20 rounded-full blur-3xl pointer-events-none"></div>
+            <div className="absolute -top-24 -left-24 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" aria-hidden="true"></div>
+            <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-teal-500/20 rounded-full blur-3xl pointer-events-none" aria-hidden="true"></div>
 
             <div className="max-w-2xl mx-auto space-y-4">
               <span className="text-xs uppercase font-extrabold tracking-widest text-indigo-300">Live Operations</span>
@@ -458,12 +479,12 @@ export default function Home() {
             <p className="text-slate-500">India Logistics Operations & Fulfillment Optimization Engine</p>
           </div>
 
-          {/* Tech Stack Badges */}
-          <div className="flex flex-wrap items-center justify-center gap-2 font-mono text-[11px]">
-            <span className="px-2.5 py-1 bg-slate-900 border border-slate-800 rounded-md text-slate-300">Next.js 14</span>
-            <span className="px-2.5 py-1 bg-slate-900 border border-slate-800 rounded-md text-slate-300">React 18</span>
+          {/* Tech Stack Badges with accurate versions */}
+          <div className="flex flex-wrap items-center justify-center gap-2 font-mono text-[11px]" role="region" aria-label="Technology stack">
+            <span className="px-2.5 py-1 bg-slate-900 border border-slate-800 rounded-md text-slate-300">Next.js 16</span>
+            <span className="px-2.5 py-1 bg-slate-900 border border-slate-800 rounded-md text-slate-300">React 19</span>
             <span className="px-2.5 py-1 bg-slate-900 border border-slate-800 rounded-md text-slate-300">Three.js / R3F</span>
-            <span className="px-2.5 py-1 bg-slate-900 border border-slate-800 rounded-md text-slate-300">Tailwind CSS</span>
+            <span className="px-2.5 py-1 bg-slate-900 border border-slate-800 rounded-md text-slate-300">Tailwind CSS v4</span>
             <span className="px-2.5 py-1 bg-slate-900 border border-slate-800 rounded-md text-slate-300">Recharts</span>
             <span className="px-2.5 py-1 bg-slate-900 border border-slate-800 rounded-md text-slate-300">Framer Motion</span>
           </div>

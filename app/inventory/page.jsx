@@ -1,8 +1,21 @@
 'use client';
 
+/**
+ * InventoryPage — Catalog, Stock Health & Reorder Recommendations.
+ *
+ * Real-time table view of 20 catalog SKUs with search, velocity filters,
+ * health status badges, and automated reorder quantity suggestions.
+ *
+ * @module InventoryPage
+ */
+
 import { useState, useMemo } from 'react';
 import { useWarehouse } from '@/lib/WarehouseContext';
 
+/**
+ * Inventory page component.
+ * @returns {JSX.Element}
+ */
 export default function InventoryPage() {
   const { products } = useWarehouse();
   const [searchQuery, setSearchQuery] = useState('');
@@ -36,10 +49,10 @@ export default function InventoryPage() {
       <div className="max-w-7xl mx-auto space-y-6">
 
         {/* Page Header */}
-        <div className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <section aria-label="Inventory Header" className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center space-x-2">
-              <span className="h-2.5 w-2.5 rounded-full bg-teal-500"></span>
+              <span className="h-2.5 w-2.5 rounded-full bg-teal-500" aria-hidden="true"></span>
               <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">Inventory Catalog</h1>
             </div>
             <p className="text-xs text-slate-500 mt-1">
@@ -47,17 +60,23 @@ export default function InventoryPage() {
             </p>
           </div>
 
-          {/* Quick Search & Filters */}
+          {/* Quick Search & Filters with accessible label */}
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-            <input
-              type="text"
-              placeholder="Search SKU or product..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full sm:w-60 min-h-[42px]"
-            />
+            <div className="w-full sm:w-60">
+              <label htmlFor="inventory-search" className="sr-only">
+                Search SKU or product name
+              </label>
+              <input
+                id="inventory-search"
+                type="text"
+                placeholder="Search SKU or product..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full min-h-[42px]"
+              />
+            </div>
 
-            <div className="flex flex-wrap items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200/70 w-full sm:w-auto justify-center">
+            <div className="flex flex-wrap items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200/70 w-full sm:w-auto justify-center" role="group" aria-label="Filter products by velocity or stock">
               {[
                 { id: 'All', label: 'All' },
                 { id: 'LowStock', label: `Low Stock (${lowStockTotal})` },
@@ -67,8 +86,10 @@ export default function InventoryPage() {
               ].map(tab => (
                 <button
                   key={tab.id}
+                  type="button"
                   onClick={() => setFilterMode(tab.id)}
-                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition min-h-[36px] ${
+                  aria-pressed={filterMode === tab.id}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition min-h-[36px] cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-400 ${
                     filterMode === tab.id
                       ? 'bg-white text-indigo-600 shadow-sm'
                       : 'text-slate-600 hover:text-slate-900'
@@ -79,21 +100,22 @@ export default function InventoryPage() {
               ))}
             </div>
           </div>
-        </div>
+        </section>
 
         {/* Products Inventory Table */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+        <section aria-label="Inventory Table" className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm text-slate-700 divide-y divide-slate-100 min-w-[700px]">
+              <caption className="sr-only">Warehouse Inventory Stock and Health Status Catalog</caption>
               <thead className="bg-slate-900 text-white text-xs uppercase tracking-wider">
                 <tr>
-                  <th className="px-5 py-4 font-bold">SKU</th>
-                  <th className="px-5 py-4 font-bold">Product Name</th>
-                  <th className="px-5 py-4 font-bold text-center">On Hand</th>
-                  <th className="px-5 py-4 font-bold text-center">Reorder Point</th>
-                  <th className="px-5 py-4 font-bold text-center">Velocity</th>
-                  <th className="px-5 py-4 font-bold text-center">Stock Health</th>
-                  <th className="px-5 py-4 font-bold text-right">Suggested Reorder Qty</th>
+                  <th scope="col" className="px-5 py-4 font-bold">SKU</th>
+                  <th scope="col" className="px-5 py-4 font-bold">Product Name</th>
+                  <th scope="col" className="px-5 py-4 font-bold text-center">On Hand</th>
+                  <th scope="col" className="px-5 py-4 font-bold text-center">Reorder Point</th>
+                  <th scope="col" className="px-5 py-4 font-bold text-center">Velocity</th>
+                  <th scope="col" className="px-5 py-4 font-bold text-center">Stock Health</th>
+                  <th scope="col" className="px-5 py-4 font-bold text-right">Suggested Reorder Qty</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -163,7 +185,7 @@ export default function InventoryPage() {
               </tbody>
             </table>
           </div>
-        </div>
+        </section>
 
       </div>
     </div>

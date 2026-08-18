@@ -1,9 +1,24 @@
 'use client';
 
+/**
+ * WarehouseGrid — 2.5D Isometric Inventory Matrix.
+ *
+ * Displays 24 visual warehouse storage zones using pure CSS 3D transforms.
+ * Dynamically color-codes each storage bin by stock health and provides
+ * keyboard accessible inspect tooltips.
+ *
+ * @module WarehouseGrid
+ */
+
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useWarehouse } from '@/lib/WarehouseContext';
 
+/**
+ * WarehouseGrid component rendering 2.5D storage zones.
+ *
+ * @returns {JSX.Element}
+ */
 export default function WarehouseGrid() {
   const { products, recentlyAllocatedIds } = useWarehouse();
   const [hoveredBin, setHoveredBin] = useState(null);
@@ -31,7 +46,7 @@ export default function WarehouseGrid() {
         <div>
           <div className="flex items-center space-x-2">
             <span className="w-2.5 h-2.5 rounded-full bg-teal-400 animate-pulse" aria-hidden="true"></span>
-            <h2 className="text-lg font-bold text-white tracking-tight">Warehouse Overview</h2>
+            <h2 className="text-lg font-bold text-white tracking-tight">Warehouse Storage Zones</h2>
           </div>
           <p className="text-xs text-slate-400 mt-0.5">2.5D Isometric Inventory Storage Grid (24 Zones)</p>
         </div>
