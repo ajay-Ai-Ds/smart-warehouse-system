@@ -19,6 +19,7 @@ const NAV_ITEMS = [
   { name: 'Inventory', href: '/inventory' },
   { name: 'Fulfillment', href: '/fulfillment' },
   { name: 'Analytics', href: '/analytics' },
+  { name: '🛒 Quality Enterprises', href: 'https://quality-enterprises.vercel.app/', external: true },
   { name: '👨‍💻 Our Team', href: '/team' },
 ];
 
@@ -91,9 +92,28 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop Navigation Links */}
-          <div className="hidden md:flex items-center space-x-1 font-medium text-sm" role="menubar">
+          <div className="hidden lg:flex items-center space-x-1 font-medium text-sm" role="menubar">
             {NAV_ITEMS.map((item) => {
-              const isActive = pathname === item.href;
+              const isExternal = Boolean(item.external || item.href.startsWith('http'));
+              const isActive = !isExternal && pathname === item.href;
+
+              if (isExternal) {
+                return (
+                  <a
+                    key={item.href}
+                    href={item.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    role="menuitem"
+                    className="px-3 py-2 rounded-xl transition-all duration-200 text-slate-300 hover:text-teal-300 hover:bg-slate-800/80 flex items-center gap-1 text-xs sm:text-sm"
+                  >
+                    <span>{item.name}</span>
+                    <svg className="w-3.5 h-3.5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </a>
+                );
+              }
 
               return (
                 <Link
@@ -101,7 +121,7 @@ export default function Navbar() {
                   href={item.href}
                   role="menuitem"
                   aria-current={isActive ? 'page' : undefined}
-                  className={`px-4 py-2 rounded-xl transition-all duration-200 ${
+                  className={`px-3 py-2 rounded-xl transition-all duration-200 text-xs sm:text-sm ${
                     isActive
                       ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-600/30'
                       : 'text-slate-300 hover:text-white hover:bg-slate-800/80'
@@ -114,7 +134,7 @@ export default function Navbar() {
           </div>
 
           {/* Mobile Hamburger Menu Button */}
-          <div className="md:hidden">
+          <div className="lg:hidden">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -141,9 +161,27 @@ export default function Navbar() {
 
         {/* Mobile Drawer */}
         {mobileMenuOpen && (
-          <div id="mobile-menu" className="md:hidden pt-3 pb-2 space-y-1 border-t border-slate-800 mt-3" role="menu">
+          <div id="mobile-menu" className="lg:hidden pt-3 pb-2 space-y-1 border-t border-slate-800 mt-3" role="menu">
             {NAV_ITEMS.map((item) => {
-              const isActive = pathname === item.href;
+              const isExternal = Boolean(item.external || item.href.startsWith('http'));
+              const isActive = !isExternal && pathname === item.href;
+
+              if (isExternal) {
+                return (
+                  <a
+                    key={item.href}
+                    href={item.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    role="menuitem"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-between px-4 py-2.5 rounded-lg text-base font-semibold text-teal-300 hover:bg-slate-800 transition"
+                  >
+                    <span>{item.name}</span>
+                    <span className="text-xs">↗</span>
+                  </a>
+                );
+              }
 
               return (
                 <Link
