@@ -19,6 +19,7 @@ const NAV_ITEMS = [
   { name: 'Inventory', href: '/inventory' },
   { name: 'Fulfillment', href: '/fulfillment' },
   { name: 'Analytics', href: '/analytics' },
+  { name: '👨‍💻 Our Team', href: '/team' },
 ];
 
 /**
